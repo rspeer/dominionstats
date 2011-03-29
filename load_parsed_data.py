@@ -13,6 +13,8 @@ parser = utils.IncrementalDateRangeCmdLineParser()
 def main():
     args = parser.parse_args()
     games_table = pymongo.Connection().test.games
+    games_table.ensure_index('players')
+    games_table.ensure_index('supply')
     data_files_to_load = os.listdir('parsed_out')
     data_files_to_load.sort()
     find_id = re.compile('game-.*.html')
