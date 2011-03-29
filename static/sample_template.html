@@ -1,0 +1,22 @@
+<html><head><title>blah</title>
+<script type="text/javascript" src="/static/flot/jquery.js"></script>
+<script type="text/javascript" src="/static/jquery-jtemplates.js"></script>
+<script type="text/javascript" src="/static/sample_template.js"></script>
+</head>
+  <body>
+    foo
+      <textarea id="buy_data_template" style="display:none">
+      {#foreach $T as card_info}
+        {$T.card_info$key}&nbsp{$T.card_info[1]}<br>
+      {#/for}
+      </textarea>
+
+    <table><thead><tr><td>Card</td><td>Winningness</td></tr></thead>
+      <div id="foo">
+	<tr><td>card1</td><td>card2</td></tr>
+      </div>
+    </table>
+    <div id="buy_data"></div>
+  </body>
+</html>
+    

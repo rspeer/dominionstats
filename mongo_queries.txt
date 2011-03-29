@@ -1,0 +1,11 @@
+.don't do this
+
+db.games.find({'players': ['BGGDL-theory', 'rrenaud']}, {'players': 1});
+
+do this
+
+db.games.count({'players': {$all : ['BGGDL-theory', 'rrenaud']} } );
+
+db.games.find({'turns.plays': {$all : ['Coppersmith', 'Counting House']} });
+
+db.games.findOne({'decks': { $elemMatch: {'name': 'rrenaud', 'points': {'$gt': 100}}}});

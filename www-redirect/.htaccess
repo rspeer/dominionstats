@@ -1,0 +1,13 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine on
+
+  # If your site can be accessed both with and without the 'www.' prefix, you
+  # can use one of the following settings to redirect users to your preferred
+  # URL, either WITH or WITHOUT the 'www.' prefix. Choose ONLY one option:
+  #
+  # To redirect all users to access the site WITH the 'www.' prefix,
+  # (http://example.com/... will be redirected to http://www.example.com/...)
+  # adapt and uncomment the following:
+  RewriteCond %{HTTP_HOST} ^www\.councilroom\.com$ [NC]
+  RewriteRule ^(.*)$ http://councilroom.com/$1 [L,R=301]
+</IfModule>

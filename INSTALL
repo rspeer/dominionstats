@@ -1,0 +1,30 @@
+This requires mongodb, pymongo, and webpy are installed.
+
+mongodb - http://www.mongodb.org/downloads
+pymongo - http://api.mongodb.org/python/1.9%2B/index.html
+webpy - http://webpy.org/
+argparse - http://code.google.com/p/argparse/ - included in Python 2.7/3.2
+
+mkdir db
+Run an instance of mongodb with mongdb --dbpath=db
+
+After install those packages, the system can be setup with the following
+commands.   Note that each of these steps takes awhile the first time, but 
+will then updates incrementally, and only has do work to process new data.
+
+python update_loop.py
+
+Then run
+
+python frontend_local.py     # starts webserver running on localhost:8080
+
+To get adequate performance for the search page from the webserver, 
+you need to make sure that there are indicies for players and kingdom cards.
+
+mongo
+MongoDB shell version: 1.6.6-pre-
+> connecting to: test
+> db.games.ensureIndex({players: 1})
+> db.games.ensureIndex({supply: 1})
+> db.games.ensureIndex({_id: -1})
+

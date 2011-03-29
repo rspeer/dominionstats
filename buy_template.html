@@ -1,0 +1,141 @@
+$def with ( cards, player_data = None )
+<html><head><title>Popular Buys</title>
+    <script language="javascript" type="text/javascript" 
+            src="static/flot/jquery.js"></script>
+    <script language="javascript" type="text/javascript"
+            src="static/jquery.dataTables.js"></script>
+    <style type="text/css">
+      tr {
+        display: table-row;
+      }
+      table {
+        border-collapse: separate;
+        border-spacing: 2px 2px;
+      }
+      tr.odd {
+        background-color: #E2E4ff;
+      }
+      tr.even {
+        background-color: white;
+      }
+      th {
+        cursor: pointer;
+      }
+      th.overall {
+        background-color: #E2E4FF;
+      }
+      th.player {
+        background-color: #A3A9FF;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <A HREF="/">Back to CouncilRoom.com</A>
+      <BR>
+      <h1>Popular Buys</h1>
+      <UL><LI>"Availability" is defined as the number of games in which the card is present, multiplied by the number of players in each game.  It represents the number of "decks" that could have purchased that card.
+      <LI>"Buys", "Gains", "Trashes", and "Returns" are defined as the total number of Buys/Gains/Trashes/Returns for the card, divided by "Availability".  It represents the average number of Buys, Gains, Trashes, or Returns of that card by each player's deck.
+      <LI>"% +" refers to the percentage of decks in which the card was bought or gained at least once.
+      <LI>"Turns" refers to the average length of games in which the card was present.  "Turns (C)" refers the average length in a game with Colonies.
+      <LI>Success is measured in Win Points: 0 for a loss, (# players) for a
+      win, and draws are split evenly between the winners.</LI>
+      <LI>"Win Rate with" is the number of Win Points per game you get when you
+      buy or gain at least one of this card.</LI>
+      <LI>"Win Rate without" is the number of Win Points per game you get when 
+      you never buy or gain the card.</LI>
+      <LI>"Effect with" is the number of standard deviations better than
+      expected you perform when you buy or gain the card.</LI>
+      <LI>"Effect without" is the number of standard deviations better than
+      expected you perform when you never buy or gain the card.</LI>
+      </UL>
+      
+      <form action='popular_buys' method='get'>
+      <input type="search" placeholder="Search by player" 
+             name="player" style="width:200px;" />
+      <input type="submit" value="Go" />
+      </form>
+      <table id="popular">
+        <thead>
+          <tr>
+            <th>&nbsp</th>
+            <th colspan="10" class="overall">Overall</th>
+            $if player_data:
+              <th colspan="13" class="player">Player stats</th>
+          </tr>
+          <tr>
+            <th class="overall">Card</th>
+            <th class="overall">Availability</th>
+            <th class="overall">Buys</th>
+            <th class="overall">Gains</th>
+            <th class="overall">% +</th>
+            <th class="overall">Trashes</th>
+            <th class="overall">Returns</th>
+            <th class="overall">Win Rate with</th>
+            <th class="overall">Win Rate without</th>
+            <th class="overall">Turns</th>
+            <th class="overall">Turns (C)</th>
+          $if player_data:
+            <th class="player">Games</th>
+            <th class="player">Win Rate given avail</th>
+            <th class="player">Buys</th>
+            <th class="player">Gains</th>
+            <th class="player">% +</th>
+            <th class="player">Trashes</th>
+            <th class="player">Returns</th>
+            <th class="player">Win Rate with</th>
+            <th class="player">Win Rate without</th>
+            <th class="player">Effect with</th>
+            <th class="player">Effect without</th>        
+            <th class="player">Turns</th>
+            <th class="player">Turns (C)</th>       
+          </tr>
+        </thead>
+        <tbody>
+          $for card_name, buy_data in cards.iteritems():
+            <tr>
+              <td>$card_name</td>
+              $ game_denom = float(buy_data.available.Frequency() or 1)
+              $code:
+                 def Norm(val, digits=2):
+                   return round(val.Frequency() / game_denom, digits)
+              <td>$buy_data.available.Frequency()</td>
+              <td>$Norm(buy_data.buys)</td>
+              <td>$Norm(buy_data.gains)</td>
+              <td>$(Norm(buy_data.any_gained)*100)</td>
+              <td>$Norm(buy_data.trashes)</td>
+              <td>$Norm(buy_data.returns, 3)</td>
+              <td>$buy_data.any_gained.RenderInterval()</td>
+              <td>$buy_data.none_gained.RenderInterval()</td>
+              <td>$buy_data.game_length.RenderInterval()</td>
+              <td>$buy_data.game_length_colony.RenderInterval()</td>
+              $if player_data:
+                $ pdata = player_data[card_name]
+                $ game_denom = float(pdata.available.Frequency() or 1)
+                <td>$pdata.available.Frequency()</td>
+                <td>$pdata.available.RenderInterval()</td>
+                <td>$Norm(pdata.buys)</td>
+                <td>$Norm(pdata.any_gained)</td>
+                <td>$(Norm(pdata.any_gained)*100)</td>
+                <td>$Norm(pdata.trashes)</td>
+                <td>$Norm(pdata.returns)</td>
+                <td>$pdata.any_gained.RenderInterval()</td>
+                <td>$pdata.none_gained.RenderInterval()</td>
+                <td>$pdata.effect_with().RenderStdevs()</td>
+                <td>$pdata.effect_without().RenderStdevs()</td>
+                <td>$pdata.game_length.RenderInterval()</td>
+                <td>$pdata.game_length_colony.RenderInterval()</td>
+            </tr>
+        </tbody>
+      </table>
+    </div>
+    <script type="text/javascript">
+      $$(document).ready( function() {
+        $$('#popular').dataTable( {
+          "aaSorting": [[ 0, "asc" ]],
+          "bPaginate": false
+        } );
+      } );
+    </script>
+  </body>
+</html>

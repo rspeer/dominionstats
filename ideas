@@ -1,0 +1,26 @@
+5/2 split percentage
+
+openings
+     run elo with openings as keys, maybe add small penalty for not being
+     choosen.
+
+card info
+     average # gained, frequency gained when avail, win %, norm win %
+     over paid for?, first gainer wins?, 
+     bought before others of same cost?
+     bought more than others of same cost?
+     most trashed
+     early vs late game card, turn distribution of gain
+
+     combos?
+	by same deck co-occurence
+	by same turn play
+     counters?
+	metrics dropped when other card available?
+
+player page
+       player card info?       
+       break down by card types, money, actions, +money, +action, terminal,
+       	     cost, attack
+       percentage of games opened double action
+       starts first?

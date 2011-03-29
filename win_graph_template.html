@@ -1,0 +1,148 @@
+$def with (title, xAxis, graphedVar, defaultValue, weightFunc)
+<html><head><title>$title</title>
+    <script language="javascript" type="text/javascript" 
+	    src="static/flot/jquery.js"></script>
+    <script language="javascript" type="text/javascript" 
+	    src="static/flot/jquery.flot.js"></script>
+    <script language="javascript" type="text/javascript" 
+	    src="static/flot/jquery.flot.errorbars.js"></script>
+    <script language="javascript" type="text/javascript"
+	    src="static/flot/jquery.parsequery.js"></script>
+    <script language="javascript" type="text/javascript" 
+	    src="static/output/all_games_card_stats.js"></script>
+
+  </head>
+  <body>
+    <table>
+      <tr>
+	<td>Win Rate</td>
+	<td>
+	  <div id="placeholder" style="width:1000px;height:500px;"></div></td>
+      </tr>
+      <tr>
+	  <td></td><td><center>$xAxis</center></td>
+      </tr>
+    </table>
+    <form onSubmit="RefreshCardGraph('$graphedVar'); return false;">
+      <label for="card_names">card names</label>
+      <input id="card_names" type="text" size=70
+	     value="$defaultValue">
+      <input type="button" value="update" 
+	     onclick="RefreshCardGraph('$graphedVar') && false;">
+      <input type="button" value="get link" id="getlink"
+	     onclick="DisplayUrl() && false;">
+    </form>
+      <input id="url_display" size="20" type="text"
+	style="position:absolute; z-index:10; display:none"
+	     value="blah">
+
+    <div style="width:55%;float:left;margin:10px">
+      <h3>Understanding the graph</h3>
+      <h4>Win rates</h4>
+      <p>
+      Win rate is a generalization of winning probability for multiplayer 
+      games.
+      <p>A win in a 2 player game is worth 2 points, a 3 player game
+      is worth 3, and so on.  Someone who plays only 2 player games and 
+      wins every time will have a winrate of 2; a 2-player gamer who loses
+      every game has a winrate of 0; a 2-player gamer who wins exactly as 
+      often as expected (half wins, half losses) has a winrate of 1.
+      <p>The win rate of an event is the average
+      number of points for that event.  So an event that is uncorrelated
+      with winning will have a win rate of 1.0, and events correlated with
+      winning have a win rate of &gt; 1.0, and losing with &lt; 1.0.
+
+      <h4>Error bars</h4>
+      <p>The error bars represent a 95% confidence interval in the measure for a 
+	particular event.
+
+      <p>The smaller the bars, the more times a particular event was observed, and
+      hence the less likely the true value is signficantly away from the center
+      point due to randomness.
+      
+      <p>The error bars represent ±2 standard deviations.  They encode the true
+      mean for any particular point with a probability of about 95%.  
+
+      <h4>Correlation</h4>
+        Don't get too carried away with interpreting these graphs: 
+        <a href="http://xkcd.com/552/">correlation does not imply 
+	causation</a>.  
+      <ul>
+	<li>In general, cards with high costs tend to look good, because they
+	  are correlated with their buyer having lots of money.  Someone who is able to get to
+    $8 is naturally going to have a higher win rate than someone who is only able to get to $6. 
+	<li>Similarly, Duchies are often bought in the late game by players who are behind and 
+   unwilling to end the game by buying out the Provinces.
+	<li>In addition, the 'card advantage' graph
+	  is most accurate for non-terminal cards and cards that you 
+	  typically want more than one copy of.  For instance, it buckets the [2 Chapels vs 1 Chapel]
+     situation into the same event as [1 Chapel vs 0 Chapels].  This is why, on average,
+     the graph displays a 1-Chapel advantage has being correlated with a below-average winrate
+      </ul>
+
+      <h4>The best choice</h4>
+      <p>Note that these statistics are merely an average over many games.  They do not
+      necessarily say much about any particular game.  So even though 
+      one card's early winning rate may be higher than a different card's winning
+      rate on the same turn, it does not follow that the more winning card
+      is neccesarily the best choice for any particular game.
+     
+      <h4>Curses and Embargo</h4>
+      <p>The apparent weirdness with the Curse graph is due to the fact that
+	Curses are rarely intentionally gained.  The only exceptions are when
+   players are ending the game (almost always in a winning position) by running out
+   the Curse pile, or are gaining Curses as a side effect of Embargo tokens.  When people
+	buy things despite being Embargoed, they are often buying a very valuable card.
+    </div>
+
+      <div style="float:left;width:38%;margin:10px">
+    <h3>Tips on using the card filters</h3>
+    <ul> 
+      <p>
+      List different card names or card filters separated by a comma.
+
+      Each filter is a JavaScript expression that is matched
+      against every card.  The expression is evaluated with attributes
+      of the card filled as local variables.  If this sounds confusing,
+      don't worry.  Here are some examples:
+
+<li><i>Cost==7</i> returns Bank, Expand, Forge, and King's Court</li> 
+<li><i>Cost == "P2"</i> returns Apothecary, Scrying Pool, and University</li>
+<li><i>(""+Cost).indexOf("P")&gt;=0</i> returns all cards with Potion in cost</li>
+<BR>
+<li><i>Actions &gt;= 2</i> returns all cards that provide 2 or more Actions</li> 
+<li><i>Cards &lt; 2</i> returns all cards that draw either 0 or 1 Card when played</li> 
+<li><i>Coins == "?"</i> returns Bank, Philosopher's Stone, Pirate Ship, Salvager, Secret Chamber, Trade Route, Tribute, and Vault</li>
+<li><i>Buys == 1</i> returns all cards that provide +1 Buy</li>
+<li><i>VP &gt;= 6</i> returns Province and Colony</li>
+<li><i>Trash == 4</i> returns Chapel</li>
+<BR>
+<li><i>Action && Victory</i> returns Great Hall, Islands, and Nobles</li> 
+<li><i>Treasure && Victory</i> returns Harem</li> 
+<BR>
+<li><i>Attack</i> returns all Attack cards</li>
+<li><i>Duration</i> returns all Duration cards</li>
+<li><i>Reaction</i> returns all reaction cards</li>
+
+    </ul>
+    </div>
+
+  <BR><BR>
+  <div style="clear:both;"></div>
+  <A HREF="/">Back to CouncilRoom.com</A>
+
+
+    <script language="javascript" type="text/javascript" 
+	    src="static/win_rate_graph.js">
+    </script>
+    <script language="javascript">
+      graph_type = '$graphedVar';
+      weight_func = $weightFunc;
+      var cards = $$.parseQuery().cards;
+      if (cards) {
+      $$('#card_names')[0].value = cards;
+      }
+    </script>
+    <div id="collection_info"></div>
+  </body>
+</html>

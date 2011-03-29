@@ -1,0 +1,4 @@
+[mongo]
+connection: localhost
+database: test
+output_database: test2

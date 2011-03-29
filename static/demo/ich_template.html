@@ -1,0 +1,23 @@
+<html><head><title>blah</title>
+<script type="text/javascript" src="static/flot/jquery.js"></script>
+<script type="text/javascript" src="static/ICanHaz.js"></script>
+<script type="text/javascript" src="static/mustache.js"></script>
+<script type="text/javascript" src="sample_template.js"></script>
+</head>
+  <body>
+    foo
+      <script id="buy_data_template" type="text/html">
+      {{#cards}}
+        <tr><td>{{cardname}}</td><td>{{w}}</td></tr>
+      {{/cards}}
+      </script>
+
+    <table><thead><tr><td>Card</td><td>Winningness</td></tr></thead>
+      <div id="foo">
+	<tr><td>card1</td><td>card2</td></tr>
+      </div>
+      <div id="buy_data"></div>
+    </table>
+  </body>
+</html>
+    

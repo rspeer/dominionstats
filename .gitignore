@@ -1,0 +1,7 @@
+*.pyc
+*.swp
+*~
+.svn
+static/status
+static/output
+parsed_out
