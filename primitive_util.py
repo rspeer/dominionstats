@@ -2,22 +2,22 @@
 
 import collections
 
-PRIMATIVES = [dict, str, int, list, float, unicode]
+PRIMITIVES = [dict, str, int, list, float, unicode]
 
-def ToPrimative(val):
-    if hasattr(val, 'ToPrimativeObject'):
-        return val.ToPrimativeObject()
-    assert type(val) in PRIMATIVES, val
+def ToPrimitive(val):
+    if hasattr(val, 'ToPrimitiveObject'):
+        return val.ToPrimitiveObject()
+    assert type(val) in PRIMITIVES, val
     return val
 
-class PrimativeConversion:
-    def ToPrimativeObject(self):
+class PrimitiveConversion:
+    def ToPrimitiveObject(self):
         ret = {}
         for k, v in self.__dict__.iteritems():
-            ret[k] = ToPrimative(v)
+            ret[k] = ToPrimitive(v)
         return ret
 
-    def FromPrimativeObject(self, obj):
+    def FromPrimitiveObject(self, obj):
         # Get rid of _id because it's something that mongo injects into our
         # objects, and it's not really natural to the objects themselves.
         obj_keys_except_id = set(obj.keys()) - set(['_id'])
@@ -25,13 +25,13 @@ class PrimativeConversion:
         assert unicoded_keys == obj_keys_except_id, (
             '%s != %s' % (str(unicoded_keys),  str(obj_keys_except_id)))
         for k in obj_keys_except_id:
-            if hasattr(self.__dict__[k], 'FromPrimativeObject'):
-                self.__dict__[k].FromPrimativeObject(obj[k])
+            if hasattr(self.__dict__[k], 'FromPrimitiveObject'):
+                self.__dict__[k].FromPrimitiveObject(obj[k])
             else:
-                assert type(obj[k]) in PRIMATIVES, obj[k]
+                assert type(obj[k]) in PRIMITIVES, obj[k]
                 self.__dict__[k] = obj[k]
 
-class ConvertibleDefaultDict(PrimativeConversion):
+class ConvertibleDefaultDict(PrimitiveConversion):
     def __init__(self, value_type, key_type = str):
         self.value_type = value_type
         self.key_type = key_type
@@ -40,22 +40,22 @@ class ConvertibleDefaultDict(PrimativeConversion):
     def __getattr__(self, key):
         return getattr(self.backing_dict, key)
 
-    def ToPrimativeObject(self):
+    def ToPrimitiveObject(self):
         ret = {}
         for key, val in self.backing_dict.iteritems():
             if type(key) == unicode:
                 key = key.encode('utf-8')
             else:
                 key = str(key)
-            ret[key] = ToPrimative(val)
+            ret[key] = ToPrimitive(val)
         return ret
 
-    def FromPrimativeObject(self, obj):
+    def FromPrimitiveObject(self, obj):
         for k, v in obj.iteritems():
             if k == '_id': continue
             val = self.value_type()
-            if hasattr(val, 'FromPrimativeObject'):
-                val.FromPrimativeObject(v)
+            if hasattr(val, 'FromPrimitiveObject'):
+                val.FromPrimitiveObject(v)
             else: 
                 val = v
             self.backing_dict[self.key_type(k)] = val
@@ -77,7 +77,7 @@ class PersistentIncrementalWrapper:
         self.max_game_id = ''
         prim_obj = self.persistent_collection.find_one({'_id': obj_id})
         if prim_obj:
-            self.wrapped_obj.FromPrimativeObject(prim_obj)
+            self.wrapped_obj.FromPrimitiveObject(prim_obj)
             # is this + '1' neccessary?
             self.max_game_id = self.wrapped_obj.max_game_id + '1'
 
@@ -92,7 +92,7 @@ class PersistentIncrementalWrapper:
 
     def Save(self):
         self.wrapped_obj.max_game_id = self.max_game_id
-        prim_obj = self.wrapped_obj.ToPrimativeObject()
+        prim_obj = self.wrapped_obj.ToPrimitiveObject()
         prim_obj['_id'] = self.obj_id
         prim_obj['max_game_id'] = self.max_game_id
         self.persistent_collection.save(prim_obj, safe = True)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
     a_from_db = list(coll.find())[0]
     new_a = A()
-    new_a.FromPrimativeObject(a_from_db)
+    new_a.FromPrimitiveObject(a_from_db)
     assert new_a.foo == a.foo
     assert new_a.bar == a.bar
 
