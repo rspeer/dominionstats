@@ -372,6 +372,14 @@ BarneyRabble plays a <span class=card-none>Saboteur</span>.
    ... putting a card back on the deck.""")
         self.assertEquals(turn_info['trashes'], ['Copper'])
 
+    def testLighthouseTurn(self):
+        turn_info = parse_game.ParseTurn("""--- rspeer's turn 6 ---
+rspeer gets +$1 from the <span class=card-duration>Lighthouse</span>.
+rspeer plays 3 <span class=card-treasure>Silvers</span> and a <span class=card-victory-treasure>Harem</span>.
+rspeer buys a <span class=card-victory>Province</span>.
+""")
+        self.assertEquals(turn_info['money'], 9)
+    
     def testCoppersmith(self):
         turn_info = parse_game.ParseTurn(u"""--- Alenia's turn 3 ---
 Alenia plays a <span class=card-none>Coppersmith</span>.

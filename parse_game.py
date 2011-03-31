@@ -42,6 +42,7 @@ KW_REVEALS = ' reveals '
 KW_RETURNING = ' returning ' 
 KW_REVEALING = ' revealing '
 KW_TO_THE_SUPPLY = ' to the supply'
+KW_GETS = ' gets +'
 KW_GETTING = ' getting +'
 KW_WHICH_IS_WORTH = ' which is worth +$'
 KW_TURNS_UP_A = ' turns up a'
@@ -387,7 +388,7 @@ def ParseTurn(turn_blob):
         if KW_REVEALING in line and KW_TO_THE_SUPPLY in line:
             # old style ambassador line
             returns.extend(CaptureCards(line))
-        if KW_GETTING in line:
+        if KW_GETTING in line or KW_GETS in line:
             money_match = GETTING_MONEY_RE.search(line)
             if money_match:
                 turn_money += int(money_match.group(1))
