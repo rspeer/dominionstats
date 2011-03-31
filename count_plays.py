@@ -12,6 +12,9 @@ plays_by_turn = c.test.plays_by_turn
 plays_by_turn.ensure_index([('key', 1), ('turn', 1)])
 plays_by_turn.ensure_index('cards')
 
+BASIC_CARDS= ['Copper', 'Silver', 'Gold', 'Potion', 'Platinum',
+               'Estate', 'Duchy', 'Province', 'Colony', 'Curse']
+
 def analyze_plays():
     """
     Analyze the card plays in all games.
@@ -81,7 +84,8 @@ def analyze_deck(deck):
         #   [Festival, Smithy, Festival, Smithy] has 2 instances
         multiplicity = defaultdict(int)
         for card in plays:
-            multiplicity[card] += 1
+            if card not in BASIC_CARDS:
+                multiplicity[card] += 1
         unique_plays = multiplicity.keys()
         unique_plays.sort()
 
@@ -104,14 +108,10 @@ def _record_play(cards, win_points, victory_points,
     occur = min(multiplicity[card] for card in cards)
     key = '+'.join(cards)
     
-    # including squared values so we can possibly MVS them later
     increases = {'freq': occur,
                  'win_points': win_points * occur,
-                 'win_points_sq': win_points ** 2 * occur,
                  'victory_points': victory_points * occur,
-                 'victory_points_sq': victory_points ** 2 * occur,
                  'money': money * occur,
-                 'money_sq': money ** 2 * occur
                 }
 
     plays.update(
@@ -121,13 +121,13 @@ def _record_play(cards, win_points, victory_points,
         upsert=True,
         safe=False
     )
-    plays_by_turn.update(
-        {'key': key, 'turn': turn_number},
-        {'$set': {'cards': list(cards), 'ncards': len(cards)},
-         '$inc': increases},
-        upsert=True,
-        safe=False
-    )
+    #plays_by_turn.update(
+    #    {'key': key, 'turn': turn_number},
+    #    {'$set': {'cards': list(cards), 'ncards': len(cards)},
+    #     '$inc': increases},
+    #    upsert=True,
+    #    safe=False
+    #)
 
 def _relative_rate(combo, rates):
     """
@@ -142,9 +142,9 @@ def _relative_rate(combo, rates):
     elif len(combo) == 2:
         expected = rates[combo[0:1]] * rates[combo[1:2]]
     elif len(combo) == 3:
-        expected = max(rates[combo[0:1]] * rates[combo[1:3]],
-                       rates[combo[1:2]] * rates[(combo[0], combo[2])],
-                       rates[combo[2:3]] * rates[combo[0:2]]
+        expected = max(rates[(combo[0],)] * rates[(combo[1], combo[2])],
+                       rates[(combo[1],)] * rates[(combo[0], combo[2])],
+                       rates[(combo[2],)] * rates[(combo[0], combo[1])]
                       )
     return rates[combo] / expected
 
