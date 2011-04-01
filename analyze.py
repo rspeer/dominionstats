@@ -1,59 +1,56 @@
  #!/usr/bin/python
 
+""" Compute correlations between when/how many of a card is gained and wins."""
+
 from __future__ import division
+
+import os
 
 import card_info
 from stats import MeanVarStat
-from game import Game, PlayerDeck, Turn
+from game import Game
+import incremental_scanner
 import pymongo
 import collections
-import copy
-import os
-import pprint
 import simplejson as json
-import sys
-import primitive_util
-import argparse
+from primitive_util import PrimitiveConversion, ConvertibleDefaultDict
+
 import utils
 
-PrimitiveConversion = primitive_util.PrimitiveConversion
-ConvertibleDefaultDict = primitive_util.ConvertibleDefaultDict
-
-parser = utils.IncrementalDateRangeCmdLineParser()
-parser.add_argument('--small_run', type=bool, default=False)
-parser.add_argument('--output_collection_name', default='analysis')
-
 class CardStatistic(PrimitiveConversion):
+    """ Per card statistics.
+
+        win_weighted_accum_turn:  Dictionary keyed by turn that correlates
+            winning and gaining/buying the card on a given turn.  It is
+            weighted in the sense that if a card is bought twice in a given
+            turn, it counts twice for that turn.
+
+        win_diff_accum:  Dictionary keyed by relative card advantage that
+            correlates winning and have an advantage/disadvantage in the
+            number of a given card.  Card advantages are rounded relative
+            to the average number gained/bought by other players through the
+            game.
+"""
     def __init__(self):
         self.available = 0
         self.win_any_accum = MeanVarStat()
         self.win_weighted_accum = MeanVarStat()
         self.win_weighted_accum_turn = ConvertibleDefaultDict(MeanVarStat, int)
         self.win_diff_accum = ConvertibleDefaultDict(MeanVarStat, int)
-
-    def __repr__(self):
-        ret = 'avail: %s/%d' % (self.win_any_accum, self.available)
-
-    def __eq__(self, other):
-        return self.__dict__ == other.__dict__
-
-    def Compare(self, other):
-        ret = ''
-        for k, v in self.__dict__.iteritems():
-            try:
-                if self.__dict__[k] != other.__dict__[k]:
-                    ret += k + '\n'
-            except TypeError, t:
-                ret += k + ' ' + t.message + '\n'
-        return ret
         
 class GamesAnalysis(PrimitiveConversion):
+    """ A collection of CardStatistics for every card in the deck. """
+
     def __init__(self):
         self.card_stats = ConvertibleDefaultDict(CardStatistic)
         self.num_games = 0
         self.max_game_id = ''
         
-    def AnalyzeGame(self, game):
+    def analyze_game(self, game):
+        """ Aggregate information about game into this object.
+
+        game: game.Game object to analyze.
+        """
         self.num_games += 1
         seen_cards_players = set()
         self.max_game_id = max(self.max_game_id, game.Id())
@@ -88,68 +85,64 @@ class GamesAnalysis(PrimitiveConversion):
                 per_card_stat = self.card_stats[card]
                 other_avg_freq = total_other_decks[card] / odeck_count
                 card_diff_index = int(card_accum_dict[card] - other_avg_freq)
-                #if card == 'Curse' and card_diff_index == 3:
-                #    print game.IsotropicUrl()
                 per_card_stat.win_diff_accum[card_diff_index].AddOutcome(
                     deck.WinPoints())
 
-    def FormatCardStats(self):
-        card_stats_list = list(self.card_stats.items())
-        card_stats_list.sort(key = lambda name_stat_pair: 
-                             -name_stat_pair[1].win_any_accum.Mean())
-        for name, card_stat in card_stats_list:
-            print name, card_stat.win_any_accum.Mean(), \
-                card_stat.win_weighted_accum.Mean()
-
 def main():
+    """ Update analysis statistics.  By default, do so incrementally, unless
+    --noincremental argument is given."""
+    parser = utils.incremental_max_parser()
+    parser.add_argument('--output_collection_name', default='analysis')
+
     args = parser.parse_args()
 
-    c = pymongo.Connection()
-    db = c.test
-    games = db.games
+    conn = pymongo.Connection()
+    database = conn.test
+    games = database.games
 
     output_collection_name = args.output_collection_name
-    output_collection = db[output_collection_name]
+    output_collection = database[output_collection_name]
     game_analysis = GamesAnalysis()
-    args.startdate = 'game-' + args.startdate
-    args.enddate = 'game-' + args.enddate
 
-    wrapper = primitive_util.PersistentIncrementalWrapper(game_analysis, '',
-                                                          output_collection)
-    print 'analysis includes', game_analysis.num_games, 'games'
-    print 'with max game no', game_analysis.max_game_id
-
-    query = {'_id': {'$gt': args.startdate,
-                     '$lt': args.enddate}}
-
-    if args.small_run:
-        assert 'rrenaud broke support for this' and False
+    scanner = incremental_scanner.IncrementalScanner(output_collection_name,
+                                                     database)
+ 
+    if args.incremental:
+        utils.read_object_from_db(game_analysis, output_collection, '')
+    else:
+        scanner.Reset()
 
     output_file_name = 'static/output/all_games_card_stats.js'
-    # if args.small_run:
-    #     coll.limit(100)
-    #     output_file_name = 'static/output/sample_games_card_stats.js'
-    # else:
-    #     output_file_name = 'static/output/all_games_card_stats.js'
 
     if not os.path.exists('static/output'):
         os.makedirs('static/output')
-    
-    for idx, g in enumerate(wrapper.Scan(games, query)):
+
+    print scanner.StatusMsg()
+
+    for idx, raw_game in enumerate(scanner.Scan(games, {})):
         try:
             if idx % 1000 == 0:
                 print idx
-            game_analysis.AnalyzeGame(Game(g))
-        except int, e:
-            print Game(g).IsotropicUrl()
-            print g
+            game_analysis.analyze_game(Game(raw_game))
+
+            if idx == args.max_games:
+                break
+        except int, exception:
+            print Game(raw_game).IsotropicUrl()
+            print exception
+            print raw_game
             raise 
 
-    wrapper.Save()
+    game_analysis.max_game_id = scanner.MaxGameId()
+    game_analysis.num_games = scanner.NumGames()
+    utils.write_object_to_db(game_analysis, output_collection, '')
+
     output_file = open(output_file_name, 'w')
     output_file.write('var all_card_data = ')
 
     json.dump(game_analysis.ToPrimitiveObject(), output_file)
+    print scanner.StatusMsg()
+    scanner.Save()
 
 if __name__ == '__main__':
     main() 

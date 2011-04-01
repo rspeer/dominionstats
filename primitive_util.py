@@ -63,40 +63,6 @@ class ConvertibleDefaultDict(PrimitiveConversion):
     def __eq__(self, obj):
         return self.backing_dict == obj.backing_dict
 
-
-
-# TODO: Get rid of this class, it really conflates two concepts, 
-# IncrementalScanning and persistent objects.  It would be cleaner to have
-# them separate, and the IncrementalScanner already exists.
-class PersistentIncrementalWrapper:
-    # wrapped_obj must have a max_game_id field
-    def __init__(self, wrapped_obj, obj_id, persistent_collection):
-        self.wrapped_obj = wrapped_obj
-        self.obj_id = obj_id
-        self.persistent_collection = persistent_collection
-        self.max_game_id = ''
-        prim_obj = self.persistent_collection.find_one({'_id': obj_id})
-        if prim_obj:
-            self.wrapped_obj.FromPrimitiveObject(prim_obj)
-            # is this + '1' neccessary?
-            self.max_game_id = self.wrapped_obj.max_game_id + '1'
-
-    def Scan(self, scan_collection, scan_query, ):
-        if not '_id' in scan_query:
-            scan_query['_id'] = {}
-        scan_query['_id']['$gt'] = max(self.max_game_id, 
-                                       scan_query['_id'].get('$gt'))
-        for item in scan_collection.find(scan_query):
-            self.max_game_id = max(item['_id'], self.max_game_id)
-            yield item
-
-    def Save(self):
-        self.wrapped_obj.max_game_id = self.max_game_id
-        prim_obj = self.wrapped_obj.ToPrimitiveObject()
-        prim_obj['_id'] = self.obj_id
-        prim_obj['max_game_id'] = self.max_game_id
-        self.persistent_collection.save(prim_obj, safe = True)
-
 if __name__ == '__main__':
     import pymongo
     c = pymongo.Connection()
