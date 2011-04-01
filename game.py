@@ -262,6 +262,9 @@ class GameState:
             self.player_decks[player.Name()]['Copper'] = 7
             self.player_decks[player.Name()]['Estate'] = 3
 
+    def GetDeckComposition(self, player):
+        return self.player_decks[player]
+
     def EncodeGameState(self):
         return {'supply': self.supply.ToPrimitiveObject(),
                 'player_decks': self.player_decks.ToPrimitiveObject()}
