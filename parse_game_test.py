@@ -6,56 +6,56 @@ import pprint
 
 class CaptureCardsTest(unittest.TestCase):
     def testCaptureCards(self):
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             'Hawk plays 3 <span class=card-treasure>Coppers</span>.')
         self.assertEquals(captured, ['Copper'] * 3)
         
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             '... ... and plays the <span class=card-none>Throne Room</span> '
             'again.')
         self.assertEquals(captured, ['Throne Room'])
 
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             '... darthfatty gains the '
             '<span class=card-reaction>Watchtower</span>.')
         self.assertEquals(captured, ['Watchtower'])
 
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             '... jpax73 gains a <span class=card-treasure>Copper</span> '
             'and a <span class=card-curse>Curse</span>')
         self.assertEquals(captured, ['Copper', 'Curse'])
 
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             'pauljh plays a <span class=card-treasure>Platinum</span>, '
             '3 <span class=card-treasure>Golds</span>, and a '
             '<span class=card-treasure>Copper</span>.')
         self.assertEquals(captured, ['Platinum', 'Gold', 'Gold', 'Gold',
                                      'Copper'])
 
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             'cards in supply: <span cardname="Black Market" '
             'class=card-none>Black Market</span>, '
             '<span cardname="Caravan" class=card-duration>Caravan</span>')
         self.assertEquals(captured, ['Black Market', 'Caravan'])
 
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             'Alenia plays a <span class=card-none>Coppersmith</span>.')
         self.assertEquals(captured, ['Coppersmith'])
         
-        captured = parse_game.CaptureCards(
+        captured = parse_game.capture_cards(
             'fairgr buys an <span class=card-none>Expand</span>')
         self.assertEquals(captured, ['Expand'])
 
 class NameAndRestTest(unittest.TestCase):
     def testNameAndRest1(self):
-        name, rest = parse_game.NameAndRest(
+        name, rest = parse_game.name_and_rest(
  "... Gypsy Steward trashes a <span class=card-treasure>Copper</span>.", 
  "trashes")
         self.assertEquals(name, "Gypsy Steward")
         self.assertEquals(rest, " a <span class=card-treasure>Copper</span>.")
 
     def testNameAndRest2(self):
-        name, rest = parse_game.NameAndRest(
+        name, rest = parse_game.name_and_rest(
 " ... rrenaud trashes an <span class=card-victory>Estate</span> and gets +1 ▼.",
 "trashes")
         self.assertEquals(name, 'rrenaud')
@@ -64,7 +64,7 @@ class NameAndRestTest(unittest.TestCase):
 
 class ParseTurnTest(unittest.TestCase):
     def testParseTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 u"""--- Hawk's turn 3 ---
    Hawk plays 3 <span class=card-treasure>Coppers</span>.
    Hawk buys a <span class=card-treasure>Silver</span>.
@@ -76,7 +76,7 @@ u"""--- Hawk's turn 3 ---
         self.assertEquals(turn_info['money'], 3)
 
     def testChapelTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 u"""--- Kiyogi's turn 4 ---
 Kiyogi plays a <span class=card-none>Chapel</span>.
 ... trashing 2 <span class=card-treasure>Coppers</span>.
@@ -86,7 +86,7 @@ Kiyogi plays a <span class=card-none>Chapel</span>.
         self.assertTrue('opp' not in turn_info)
 
     def testBishopTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 u"""--- Gypsy Steward's turn 7 ---
 Gypsy Steward plays a <span class=card-none>Bishop</span>.
 ... getting +$1 and +1 ▼.
@@ -100,7 +100,7 @@ Gypsy Steward buys a <span class=card-treasure>Silver</span>.""")
         self.assertEquals(turn_info['money'], 4)
 
     def testBishopTurn2(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 """--- rrenaud's turn 3 ---
  rrenaud plays a <span class=card-none>Bishop</span>.
  ... getting +$1 and +1 ▼.
@@ -113,7 +113,7 @@ Gypsy Steward buys a <span class=card-treasure>Silver</span>.""")
         self.assertEquals(turn_info['money'], 4)
 
     def testBishopTurn3(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 """   --- kristi's turn 4 ---
     kristi plays a <span class=card-none>Bishop</span>.
     ... getting +$1 and +1 ▼.
@@ -125,7 +125,7 @@ Gypsy Steward buys a <span class=card-treasure>Silver</span>.""")
         self.assertEquals(turn_info['money'], 1)
 
     def testMineUpgradeTurn(self):
-        turn_info = parse_game.ParseTurn(u"""--- rrenaud's turn 12 ---
+        turn_info = parse_game.parse_turn(u"""--- rrenaud's turn 12 ---
 rrenaud plays a <span class=card-none>Mine</span>.
 ... trashing a <span class=card-treasure>Talisman</span> and gaining a <span class=card-treasure>Gold</span>.
 rrenaud plays a <span class=card-treasure>Gold</span>, a <span class=card-treasure>Royal Seal</span>, and a <span class=card-treasure>Copper</span>.
@@ -140,7 +140,7 @@ rrenaud buys a <span class=card-treasure>Gold</span>.
         self.assertEquals(turn_info['money'], 7)
 
     def testAmbassadorTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 u"""        --- feelingzwontfade's turn 3 ---
 feelingzwontfade plays an <span class=card-none>Ambassador</span>.
 ... feelingzwontfade reveals an <span class=card-victory>Estate</span>.
@@ -155,7 +155,7 @@ feelingzwontfade plays an <span class=card-none>Ambassador</span>.
                           ['Estate'])
 
     def testAmbassadorSecretChamberResponseTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 u"""   --- hughes's turn 16 ---
    hughes plays an <span class=card-none>Ambassador</span>.
    ... Talia reveals a <span class=card-reaction>Secret Chamber</span>.
@@ -170,7 +170,7 @@ u"""   --- hughes's turn 16 ---
         self.assertEquals(turn_info['opp']['Talia']['gains'], ['Copper'])
 
     def testAmbassador3(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 """   --- hughes's turn 6 ---
    hughes plays an <span class=card-none>Ambassador</span>.
    ... hughes reveals a <span class=card-treasure>Copper</span>.
@@ -180,7 +180,7 @@ u"""   --- hughes's turn 16 ---
         self.assertEquals(turn_info['opp']['Talia']['gains'], ['Copper'])
 
     def testAmbassador4(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 """--- rrenaud's turn 4 ---
 rrenaud plays an <span class=card-none>Ambassador</span>.
 ... revealing 2 <span class=card-treasure>Coppers</span> and returning them to the supply.
@@ -189,7 +189,7 @@ rrenaud plays an <span class=card-none>Ambassador</span>.
         self.assertEquals(turn_info['returns'], ['Copper', 'Copper'])
 
     def testAmbassador5(self):
-        turn_info = parse_game.ParseTurn("""--- rrenaud's turn 8 ---
+        turn_info = parse_game.parse_turn("""--- rrenaud's turn 8 ---
 rrenaud plays a <span class=card-none>Worker's Village</span>.
 ... drawing 1 card and getting +2 actions and +1 buy.
 rrenaud plays an <span class=card-none>Ambassador</span>.
@@ -204,7 +204,7 @@ rrenaud plays an <span class=card-none>Ambassador</span>.
                           ['Copper', 'Copper'])
 
     def testTradingPostTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 """--- Apollo's turn 11 ---
 Apollo plays a <span class=card-none>Trading Post</span>.
       ... Apollo trashes a <span class=card-treasure>Copper</span> and an <span class=card-victory>Estate</span>, gaining a <span class=card-treasure>Silver</span> in hand.
@@ -216,14 +216,14 @@ Apollo plays a <span class=card-none>Trading Post</span>.
         self.assertEquals(turn_info['money'], 3)
 
     def testSeaHagTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 """--- doh's turn 14 ---
     doh plays a <span class=card-none>Sea Hag</span>.
     ... Dave discards a <span class=card-none>Courtyard</span> and gains a <span class=card-curse>Curse</span> on top of the deck.""")
         self.assertEquals(turn_info['opp']['Dave']['gains'], ['Curse'])
 
     def testSeaHagTurn2(self):
-        turn_info = parse_game.ParseTurn("""
+        turn_info = parse_game.parse_turn("""
   --- Kemps's turn 6 ---
     Kemps plays a <span class=card-none>Sea Hag</span>.
     ... BaconSnake discards nothing and gains a <span class=card-curse>Curse</span> on top of the deck.
@@ -234,7 +234,7 @@ Apollo plays a <span class=card-none>Trading Post</span>.
         self.assertEquals(turn_info['money'], 2)
 
     def testPirateShipTurn(self):
-        turn_info = parse_game.ParseTurn(
+        turn_info = parse_game.parse_turn(
 u"""--- Luana's turn 7 ---
 Luana plays a <span class=card-none>Pirate Ship</span>.
 ... attacking the other players.
@@ -249,9 +249,11 @@ Luana plays 2 <span class=card-treasure>Coppers</span>.
         self.assertEquals(turn_info['name'], 'Luana')
         self.assertTrue('gains' not in turn_info)
         self.assertEquals(turn_info['money'], 2)
+        self.assertTrue('opp' in turn_info, turn_info)
+        self.assertEquals(turn_info['opp']['Stiv']['Trashes'], ['Copper'])
 
     def testBankTurn(self):
-        turn_info = parse_game.ParseTurn(u"""
+        turn_info = parse_game.parse_turn(u"""
 --- Maculus's turn 10 ---
 Maculus plays a <span class=card-treasure>Silver</span>, 2 <span class=card-treasure>Coppers</span>, and a <span class=card-treasure>Gold</span>.
 Maculus plays a <span class=card-treasure>Bank</span>.
@@ -261,7 +263,7 @@ Maculus buys a <span class=card-victory>Province</span>.
         self.assertEquals(turn_info['money'], 12)
 
     def testPhilospherStoneTurn(self):
-        turn_info = parse_game.ParseTurn(u"""
+        turn_info = parse_game.parse_turn(u"""
 --- MonkeyBrains's turn 15 ---
 MonkeyBrains plays a <span class=card-none>Laboratory</span>.
 ... drawing 2 cards and getting +1 action.
@@ -285,7 +287,7 @@ MonkeyBrains returns a <span class=card-treasure>Philosopher's Stone</span> to t
         self.assertEquals(turn_info['money'], 10)
 
     def testGainViaWorkshopTurn(self):
-        turn_info = parse_game.ParseTurn(u"""
+        turn_info = parse_game.parse_turn(u"""
 --- Stuart's turn 4 ---
 Stuart plays a <span class=card-none>Workshop</span>.
 ... gaining a <span class=card-none>Bridge</span>.
@@ -300,7 +302,7 @@ Stuart buys a <span class=card-none>Pawn</span>.
         self.assertEquals(turn_info['money'], 2)
         
     def testWitchTurn(self):
-        turn_info = parse_game.ParseTurn(u"""
+        turn_info = parse_game.parse_turn(u"""
 --- FlippinPancakes's turn 5 ---
 FlippinPancakes plays a <span class=card-none>Witch</span>.
 ... drawing 2 cards.
@@ -315,7 +317,7 @@ FlippinPancakes buys a <span class=card-duration>Lighthouse</span>.
         self.assertEquals(turn_info['money'], 2)
 
     def testSwindlerTurn(self):
-        turn_info = parse_game.ParseTurn(u"""--- toaster's turn 9 ---
+        turn_info = parse_game.parse_turn(u"""--- toaster's turn 9 ---
    toaster plays a <span class=card-none>Swindler</span>.
    ... getting +$2.
    ... brst13 turns up a <span class=card-treasure>Silver</span> and trashes it.
@@ -328,7 +330,7 @@ FlippinPancakes buys a <span class=card-duration>Lighthouse</span>.
         self.assertEquals(turn_info['opp']['z666']['trashes'], ['Shanty Town'])
 
     def testSaboteurTurn(self):
-        turn_info = parse_game.ParseTurn(u"""--- BarneyRabble's turn 7 ---
+        turn_info = parse_game.parse_turn(u"""--- BarneyRabble's turn 7 ---
 BarneyRabble plays an <span class=card-none>Ironworks</span>.
 ... gaining an <span class=card-victory-action>Island</span>.
 ... (BarneyRabble reshuffles.)
@@ -343,7 +345,7 @@ BarneyRabble plays a <span class=card-none>Saboteur</span>.
         self.assertEquals(turn_info['opp']['UfoSalata']['trashes'], ['Baron'])
 
     def testSaboteurTurn2(self):
-        turn_info = parse_game.ParseTurn("""--- UfoSalata's turn 14 ---
+        turn_info = parse_game.parse_turn("""--- UfoSalata's turn 14 ---
       UfoSalata plays a <span class=card-none>Saboteur</span>.
       ... BarneyRabble reveals a <span class=card-none>Saboteur</span> and trashes it.
       ... BarneyRabble gains a <span class=card-treasure>Silver</span> to replace it.
@@ -362,7 +364,7 @@ BarneyRabble plays a <span class=card-none>Saboteur</span>.
 
 
     def testLookoutTurn(self):
-        turn_info = parse_game.ParseTurn("""--- toaster's turn 9 ---
+        turn_info = parse_game.parse_turn("""--- toaster's turn 9 ---
            toaster plays a <span class=card-none>Lookout</span>.
    ... getting +1 action.
    ... (toaster reshuffles.)
@@ -372,16 +374,8 @@ BarneyRabble plays a <span class=card-none>Saboteur</span>.
    ... putting a card back on the deck.""")
         self.assertEquals(turn_info['trashes'], ['Copper'])
 
-    def testLighthouseTurn(self):
-        turn_info = parse_game.ParseTurn("""--- rspeer's turn 6 ---
-rspeer gets +$1 from the <span class=card-duration>Lighthouse</span>.
-rspeer plays 3 <span class=card-treasure>Silvers</span> and a <span class=card-victory-treasure>Harem</span>.
-rspeer buys a <span class=card-victory>Province</span>.
-""")
-        self.assertEquals(turn_info['money'], 9)
-    
     def testCoppersmith(self):
-        turn_info = parse_game.ParseTurn(u"""--- Alenia's turn 3 ---
+        turn_info = parse_game.parse_turn(u"""--- Alenia's turn 3 ---
 Alenia plays a <span class=card-none>Coppersmith</span>.
 ... making each <span class=card-treasure>Copper</span> worth $2.
 Alenia plays a <span class=card-treasure>Silver</span> and 2 <span class=card-treasure>Coppers</span>.
@@ -394,7 +388,7 @@ Alenia buys a <span class=card-victory-action>Nobles</span>.
         self.assertEquals(turn_info['money'], 6)
 
     def testUTF8Name(self):
-        turn_info = parse_game.ParseTurn(u"""--- Görling's turn 1 ---
+        turn_info = parse_game.parse_turn(u"""--- Görling's turn 1 ---
 Görling plays 3 <span class=card-treasure>Coppers</span>.
 Görling buys a <span class=card-none>Workshop</span>.
 <span class=logonly>(Görling draws: an <span class=card-victory>Estate</span> and 4 <span class=card-treasure>Coppers</span>.)</span> """)
@@ -403,7 +397,7 @@ Görling buys a <span class=card-none>Workshop</span>.
 
 class ParseTurnsTest(unittest.TestCase):
     def testSimpleInput(self):
-        turns_info = parse_game.ParseTurns(u"""
+        turns_info = parse_game.parse_turns(u"""
 --- Zor Prime's turn 1 ---
 Zor Prime plays 3 <span class=card-treasure>Coppers</span>.
 Zor Prime buys a <span class=card-treasure>Silver</span>.
@@ -437,7 +431,7 @@ Zor Prime buys a <span class=card-treasure>Silver</span>.
 
 class ParseDeckTest(unittest.TestCase):
     def testDeck(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>Snead: 75 points</b> (7 <span class=card-victory>Colonies</span>, 2 <span class=card-victory-action>Islands</span>, and an <span class=card-victory>Estate</span>); 22 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>Snead: 75 points</b> (7 <span class=card-victory>Colonies</span>, 2 <span class=card-victory-action>Islands</span>, and an <span class=card-victory>Estate</span>); 22 turns
        opening: <span class=card-victory-action>Island</span> / <span class=card-treasure>Silver</span>
        [15 cards] 2 <span class=card-victory-action>Islands</span>, 1 <span class=card-none>Chapel</span>, 1 <span class=card-duration>Tactician</span>, 1 <span class=card-treasure>Silver</span>, 2 <span class=card-treasure>Platinums</span>, 1 <span class=card-victory>Estate</span>, 7 <span class=card-victory>Colonies</span>""")
         self.assertEquals(parsed_deck['name'], 'Snead')
@@ -453,25 +447,25 @@ class ParseDeckTest(unittest.TestCase):
                            'Colony': 7})
 
     def testDeckWithResign(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>#1 kiwi</b>: resigned (1st); 13 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>#1 kiwi</b>: resigned (1st); 13 turns
       opening: <span class=card-none>Shanty Town</span> / <span class=card-none>Baron</span> 
       [23 cards] 8 <span class=card-none>Shanty Towns</span>, 5 <span class=card-none>Rabbles</span>, 2 <span class=card-none>Expands</span>, 1 <span class=card-none>Market</span>, 6 <span class=card-treasure>Coppers</span>, 1 <span class=card-victory>Estate</span> """)
         self.assertEquals(parsed_deck['resigned'], True)
 
     def test20101213StyleDeck(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>#1 zorkkorz</b>: 43 points (4 <span class=card-victory>Provinces</span>, 3 <span class=card-victory>Duchies</span>, 2 <span class=card-victory>Dukes</span>, and 2 <span class=card-victory-treasure>Harems</span>); 21 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>#1 zorkkorz</b>: 43 points (4 <span class=card-victory>Provinces</span>, 3 <span class=card-victory>Duchies</span>, 2 <span class=card-victory>Dukes</span>, and 2 <span class=card-victory-treasure>Harems</span>); 21 turns
           opening: <span class=card-none>Upgrade</span> / <span class=card-duration>Lighthouse</span> 
           [25 cards] 2 <span class=card-victory>Dukes</span>, 2 <span class=card-victory-treasure>Harems</span>, 2 <span class=card-none>Upgrades</span>, 1 <span class=card-none>Expand</span>, 1 <span class=card-duration>Lighthouse</span>, 4 <span class=card-treasure>Silvers</span>, 6 <span class=card-treasure>Golds</span>, 3 <span class=card-victory>Duchies</span>, 4 <span class=card-victory>Provinces</span> """)
         self.assertEquals(parsed_deck['name'], 'zorkkorz')
 
     def test20101213StyleDeckWithParenName(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>#1 Foo (Bar)</b>: 43 points (4 <span class=card-victory>Provinces</span>, 3 <span class=card-victory>Duchies</span>, 2 <span class=card-victory>Dukes</span>, and 2 <span class=card-victory-treasure>Harems</span>); 21 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>#1 Foo (Bar)</b>: 43 points (4 <span class=card-victory>Provinces</span>, 3 <span class=card-victory>Duchies</span>, 2 <span class=card-victory>Dukes</span>, and 2 <span class=card-victory-treasure>Harems</span>); 21 turns
           opening: <span class=card-none>Upgrade</span> / <span class=card-duration>Lighthouse</span> 
           [25 cards] 2 <span class=card-victory>Dukes</span>, 2 <span class=card-victory-treasure>Harems</span>, 2 <span class=card-none>Upgrades</span>, 1 <span class=card-none>Expand</span>, 1 <span class=card-duration>Lighthouse</span>, 4 <span class=card-treasure>Silvers</span>, 6 <span class=card-treasure>Golds</span>, 3 <span class=card-victory>Duchies</span>, 4 <span class=card-victory>Provinces</span> """)
         self.assertEquals(parsed_deck['name'], 'Foo (Bar)')
 
     def test20101226EvilFingName(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>#1 20 points</b>: 43 points (4 <span class=card-victory>Provinces</span>, 3 <span class=card-victory>Duchies</span>, 2 <span class=card-victory>Dukes</span>, and 2 <span class=card-victory-treasure>Harems</span>); 21 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>#1 20 points</b>: 43 points (4 <span class=card-victory>Provinces</span>, 3 <span class=card-victory>Duchies</span>, 2 <span class=card-victory>Dukes</span>, and 2 <span class=card-victory-treasure>Harems</span>); 21 turns
           opening: <span class=card-none>Upgrade</span> / <span class=card-duration>Lighthouse</span> 
           [25 cards] 2 <span class=card-victory>Dukes</span>, 2 <span class=card-victory-treasure>Harems</span>, 2 <span class=card-none>Upgrades</span>, 1 <span class=card-none>Expand</span>, 1 <span class=card-duration>Lighthouse</span>, 4 <span class=card-treasure>Silvers</span>, 6 <span class=card-treasure>Golds</span>, 3 <span class=card-victory>Duchies</span>, 4 <span class=card-victory>Provinces</span> """)
         self.assertEquals(parsed_deck['name'], '20 points')
@@ -479,25 +473,25 @@ class ParseDeckTest(unittest.TestCase):
 
 
     def testDeckWithVP(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>Jon: 19 points</b> (16 ▼ and a <span class=card-victory>Duchy</span>); 20 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>Jon: 19 points</b> (16 ▼ and a <span class=card-victory>Duchy</span>); 20 turns
      opening: <span class=card-none>Salvager</span> / <span class=card-none>Black Market</span>
      [7 cards] 2 <span class=card-none>Bishops</span>, 1 <span class=card-duration>Tactician</span>, 1 <span class=card-treasure>Silver</span>, 2 <span class=card-treasure>Golds</span>, 1 <span class=card-victory>Duchy</span>""")
         self.assertEquals(parsed_deck['vp_tokens'], 16)
 
     def testDeckWithVP2(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>Chrome: 12 points</b> (a <span class=card-victory>Province</span> and 6 ▼); 13 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>Chrome: 12 points</b> (a <span class=card-victory>Province</span> and 6 ▼); 13 turns
         opening: <span class=card-none>Ironworks</span> / <span class=card-none>Black Market</span>
         [25 cards] 5 <span class=card-duration>Merchant Ships</span>, 5 <span class=card-none>Universities</span>, 2 <span class=card-none>Apprentices</span>, 2 <span class=card-none>Warehouses</span>, 1 <span class=card-none>Bishop</span>, 1 <span class=card-none>Black Market</span>, 1 <span class=card-none>Explorer</span>, 1 <span class=card-none>Worker's Village</span>, 6 <span class=card-treasure>Coppers</span>, 1 <span class=card-victory>Province</span>""")
         self.assertEquals(parsed_deck['vp_tokens'], 6)
 
     def testParseOldDeckWithParen(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>Jeremy (BaconSnake): 66 points</b> (8 <span class=card-victory>Provinces</span>, 4 <span class=card-victory>Duchies</span>, and 6 <span class=card-victory>Estates</span>); 28 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>Jeremy (BaconSnake): 66 points</b> (8 <span class=card-victory>Provinces</span>, 4 <span class=card-victory>Duchies</span>, and 6 <span class=card-victory>Estates</span>); 28 turns
                      opening: <span class=card-none>Smithy</span> / <span class=card-treasure>Silver</span> 
                      [38 cards] 2 <span class=card-none>Smithies</span>, 7 <span class=card-treasure>Coppers</span>, 5 <span class=card-treasure>Silvers</span>, 6 <span class=card-treasure>Golds</span>, 6 <span class=card-victory>Estates</span>, 4 <span class=card-victory>Duchies</span>, 8 <span class=card-victory>Provinces</span> """)
         self.assertEquals(parsed_deck['name'], 'Jeremy (BaconSnake)')
 
     def testDeckWithVP3(self):
-        parsed_deck = parse_game.ParseDeck(u"""<b>Chrome: 12 points</b> (a <span class=card-victory>Province</span> and 26 ▼); 13 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>Chrome: 12 points</b> (a <span class=card-victory>Province</span> and 26 ▼); 13 turns
         opening: <span class=card-none>Ironworks</span> / <span class=card-none>Black Market</span>
         [25 cards] 5 <span class=card-duration>Merchant Ships</span>, 5 <span class=card-none>Universities</span>, 2 <span class=card-none>Apprentices</span>, 2 <span class=card-none>Warehouses</span>, 1 <span class=card-none>Bishop</span>, 1 <span class=card-none>Black Market</span>, 1 <span class=card-none>Explorer</span>, 1 <span class=card-none>Worker's Village</span>, 6 <span class=card-treasure>Coppers</span>, 1 <span class=card-victory>Province</span>""")
         self.assertEquals(parsed_deck['vp_tokens'], 26)
@@ -505,7 +499,7 @@ class ParseDeckTest(unittest.TestCase):
     def testParseEmptyDeck(self):
         # it's random BS like this that makes writing a dominion log parser
         # a pain.
-        parsed_deck = parse_game.ParseDeck(u"""<b>torchrat: 0 points</b> (nothing); 24 turns
+        parsed_deck = parse_game.parse_deck(u"""<b>torchrat: 0 points</b> (nothing); 24 turns
           opening: <span class=card-none>Moneylender</span> / <span class=card-treasure>Silver</span>
           [0 cards] """)
         self.assertEquals(parsed_deck['vp_tokens'], 0)
@@ -517,7 +511,7 @@ class AssignWinPointsTest(unittest.TestCase):
                 {'points': 2, 'turns': [None, None]},
                 {'points': 1, 'turns': [None, None]}
                 ]}
-        parse_game.AssignWinPoints(g)
+        parse_game.assign_win_points(g)
         self.assertEquals(g['decks'][0]['win_points'], 2.0)
         self.assertEquals(g['decks'][1]['win_points'], 0.0)
 
@@ -526,7 +520,7 @@ class AssignWinPointsTest(unittest.TestCase):
                 {'points': 2, 'turns': [None, None]},
                 {'points': 2, 'turns': [None]}
                 ]}
-        parse_game.AssignWinPoints(g)
+        parse_game.assign_win_points(g)
         self.assertEquals(g['decks'][0]['win_points'], 0.0)
         self.assertEquals(g['decks'][1]['win_points'], 2.0)        
         
@@ -535,7 +529,7 @@ class AssignWinPointsTest(unittest.TestCase):
                 {'points': 2, 'turns': [None, None]},
                 {'points': 2, 'turns': [None, None]}
                 ]}
-        parse_game.AssignWinPoints(g)        
+        parse_game.assign_win_points(g)        
         self.assertEquals(g['decks'][0]['win_points'], 1.0)
         self.assertEquals(g['decks'][1]['win_points'], 1.0)
 
@@ -545,13 +539,13 @@ class AssignWinPointsTest(unittest.TestCase):
                 {'points': 2, 'turns': [None, None]},
                 {'points': 1, 'turns': [None, None]}
                 ]}
-        parse_game.AssignWinPoints(g)        
+        parse_game.assign_win_points(g)        
         self.assertEquals(g['decks'][0]['win_points'], 1.5)
         self.assertEquals(g['decks'][1]['win_points'], 1.5)
 
 class ParseGameHeaderTest(unittest.TestCase):
     def testParseHeader(self):
-        parsed_header = parse_game.ParseHeader(u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #2051</title></head><body><pre>AndMyAxe! wins!
+        parsed_header = parse_game.parse_header(u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #2051</title></head><body><pre>AndMyAxe! wins!
 All <span class=card-victory>Provinces</span> are gone.
 
 cards in supply: <span cardname="Black Market" class=card-none>Black Market</span>, <span cardname="Caravan" class=card-duration>Caravan</span>, <span cardname="Chancellor" class=card-none>Chancellor</span>, <span cardname="City" class=card-none>City</span>, <span cardname="Council Room" class=card-none>Council Room</span>, <span cardname="Counting House" class=card-none>Counting House</span>, <span cardname="Explorer" class=card-none>Explorer</span>, <span cardname="Market" class=card-none>Market</span>, <span cardname="Mine" class=card-none>Mine</span>, and <span cardname="Pawn" class=card-none>Pawn</span>""")
@@ -568,7 +562,7 @@ cards in supply: <span cardname="Black Market" class=card-none>Black Market</spa
                                                     "Pawn"])
 
     def testHeaderWithResign(self):
-        parsed_header = parse_game.ParseHeader(u"""<html><head><link rel="stylesheet" href="/client.css"><title>Dominion Game #262</title></head><body><pre>uberme wins!
+        parsed_header = parse_game.parse_header(u"""<html><head><link rel="stylesheet" href="/client.css"><title>Dominion Game #262</title></head><body><pre>uberme wins!
 All but one player has resigned.
  
 cards in supply: <span cardname="Bank" class=card-treasure>Bank</span>, <span cardname="Black Market" class=card-none>Black Market</span>, <span cardname="Colony" class=card-victory>Colony</span>, <span cardname="Hoard" class=card-treasure>Hoard</span>, <span cardname="Ironworks" class=card-none>Ironworks</span>, <span cardname="Militia" class=card-none>Militia</span>, <span cardname="Moneylender" class=card-none>Moneylender</span>, <span cardname="Platinum" class=card-treasure>Platinum</span>, <span cardname="Rabble" class=card-none>Rabble</span>, <span cardname="Scout" class=card-none>Scout</span>, <span cardname="Sea Hag" class=card-none>Sea Hag</span>, and <span cardname="Worker's Village" class=card-none>Worker's Village</span>
@@ -578,7 +572,7 @@ cards in supply: <span cardname="Bank" class=card-treasure>Bank</span>, <span ca
         
 
     def testParseHeaderWithMultiEnd(self):
-        parsed_header = parse_game.ParseHeader(u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #3865</title></head><body><pre>stormybriggs wins!
+        parsed_header = parse_game.parse_header(u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #3865</title></head><body><pre>stormybriggs wins!
 <span class=card-victory>Duchies</span>, <span class=card-victory>Estates</span>, and <span class=card-none>Peddlers</span> are all gone.
 
 cards in supply: <span cardname="Colony" class=card-victory>Colony</span>, <span cardname="Grand Market" class=card-none>Grand Market</span>, <span cardname="Loan" class=card-treasure>Loan</span>, <span cardname="Mine" class=card-none>Mine</span>, <span cardname="Monument" class=card-none>Monument</span>, <span cardname="Outpost" class=card-duration>Outpost</span>, <span cardname="Peddler" class=card-none>Peddler</span>, <span cardname="Platinum" class=card-treasure>Platinum</span>, <span cardname="Stash" class=card-treasure>Stash</span>, <span cardname="Warehouse" class=card-none>Warehouse</span>, <span cardname="Witch" class=card-none>Witch</span>, and <span cardname="Worker's Village" class=card-none>Worker's Village</span>
@@ -590,15 +584,17 @@ cards in supply: <span cardname="Colony" class=card-victory>Colony</span>, <span
 class ValidateNamesTest(unittest.TestCase):
     def testKeywordInName(self):
         decks = [{'name': 'gains a curse'}]
-        self.assertRaises(parse_game.BogusGame, parse_game.ValidateNames, decks)
+        self.assertRaises(parse_game.BogusGame, parse_game.validate_names, 
+                          decks)
 
     def testStartsWithPeriod(self):
         decks = [{'name': '.evil'}]
-        self.assertRaises(parse_game.BogusGame, parse_game.ValidateNames, decks)
+        self.assertRaises(parse_game.BogusGame, parse_game.validate_names, 
+                          decks)
 
 class ParseGameTest(unittest.TestCase):
     def testParseGame(self):
-        parsed_game = parse_game.ParseGame(u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #2083</title></head><body><pre>Alenia wins!
+        parsed_game = parse_game.parse_game(u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #2083</title></head><body><pre>Alenia wins!
 All <span class=card-victory>Provinces</span> are gone.
 
 cards in supply: <span cardname="Coppersmith" class=card-none>Coppersmith</span>, <span cardname="Expand" class=card-none>Expand</span>, <span cardname="Gardens" class=card-victory>Gardens</span>, <span cardname="Mining Village" class=card-none>Mining Village</span>, <span cardname="Nobles" class=card-victory-action>Nobles</span>, <span cardname="Outpost" class=card-duration>Outpost</span>, <span cardname="Pearl Diver" class=card-none>Pearl Diver</span>, <span cardname="Thief" class=card-none>Thief</span>, <span cardname="Throne Room" class=card-none>Throne Room</span>, and <span cardname="Worker's Village" class=card-none>Worker's Village</span>
@@ -727,16 +723,16 @@ All but one player has resigned.
 dcg wins!
 </pre></body></html>"""
     def testParseGameWithEvilName(self):
-        parsed_game = parse_game.ParseGame(ParseGameTest.EVIL_GAME_CONTENTS)
-        self.assertEquals(parsed_game['players'], ['8----------------------d',
-                                                   'dcg'])
+        parsed_game = parse_game.parse_game(ParseGameTest.EVIL_GAME_CONTENTS)
+        self.assertEquals(set(parsed_game['players']), 
+                          set(['8----------------------d', 'dcg']))
 
     def testParseGameWithBogusCheck(self):
-        self.assertRaises(parse_game.BogusGame, parse_game.ParseGame, 
+        self.assertRaises(parse_game.BogusGame, parse_game.parse_game, 
                           ParseGameTest.EVIL_GAME_CONTENTS, True)
 
     def testParseGameWithReverseTurnOrder(self):
-        parsed_game = parse_game.ParseGame(ParseGameTest.EVIL_GAME_CONTENTS)
+        parsed_game = parse_game.parse_game(ParseGameTest.EVIL_GAME_CONTENTS)
         self.assertEquals(parsed_game['decks'][0]['order'], 2)
         self.assertEquals(parsed_game['decks'][1]['order'], 1)
 
