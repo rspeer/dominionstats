@@ -59,10 +59,10 @@ class BogusGame(Exception):
         self.reason = reason
 
 def capture_cards(line):
-    """ Given a line of text from isotropic, extract the card names
+    """ Given a line of text from isotropic, extract the card names.
 
     line: string like 'Rob plays a <span class=card-none>Minion</span>.'
-    returns: list of string of card names, ['Minion']
+    returns: list of string of card names, eg, ['Minion']
     """
     def _as_int_or_1(string_val):
         try:
@@ -103,7 +103,7 @@ def capture_cards(line):
 def assign_win_points(game_dict):
     """ Set win_points to number of win points for each player in game_dict."""
     def win_tuple(deck_dict):        
-        """ Return tuple that ordered by increasing final standing """
+        """ Return tuple ordered by increasing final standing. """
         # negate turns so that max() behaves; points good, turns bad.
         return (deck_dict['points'], -len(deck_dict['turns']))
 
@@ -124,7 +124,10 @@ def associate_game_with_norm_names(game_dict):
 
 def associate_turns_with_owner(game_dict, turns):
     """ Move each turn in turns to be a member of the corresponding player
-    in game_dict.  We can remove the names from the turn."""
+    in game_dict.  
+
+    Remove the names from the turn, since it is redundant with the name
+    on the player-level dict."""
     name_to_owner = {}
     for idx, deck in enumerate(game_dict['decks']):
         name_to_owner[deck['name']] = deck
@@ -164,10 +167,6 @@ def validate_names(decks):
         raise BogusGame('not everyone took a turn?')
     if len(decks) <= 1:
         raise BogusGame('only one player')
-
-def _player_label(idx):
-    """ Return label for player index """ 
-    return 'player' + str(idx + 1)
 
 def parse_game(game_str, dubious_check = False):
     """ Parse game_str into game dictionary
@@ -318,7 +317,7 @@ def name_and_rest(line, term):
     return name, line[start_of_term + len(term):]
 
 def _delete_keys_with_empty_vals(dict_obj):
-    """ Remove keys from object that are associated with False objects."""
+    """ Remove keys from object associated with values that are False/empty."""
     keys_to_die = []
     for k in dict_obj:
         if not dict_obj[k]:
@@ -510,7 +509,8 @@ def segments(lis, chunk_size):
 
 def dump_segment(arg_tuple):
     """ Write a json serialized version of games to to name determined by 
-    arg tuple.
+    arg tuple.  It's in this annoying format for compatibility with 
+    multiprocessing.pool.map.
     """
     idx, year_month_day, segment = arg_tuple
     out_name = 'parsed_out/%s-%d.json' % (year_month_day, idx)
@@ -518,7 +518,8 @@ def dump_segment(arg_tuple):
 
 def convert_to_json(year_month_day, games_to_parse = None):
     """ Parse the games in for given year_month_day and output them
-    into split local files.
+    into split local files.  Each local file should contain 100 games or
+    less, and be smaller than 4 MB, for easy import into mongodb.
 
     year_month_day: string in yyyymmdd format encoding date
     games_to_parse: if given, use these games rather than all files in dir.
@@ -571,8 +572,8 @@ def parse_game_from_file(filename):
 def check_game_sanity(game_val):
     """ Check if if game_val is self consistent. 
 
-    In particular, check that the the player decks match the result of 
-    simulating the saved games through the deck."""
+    In particular, check that the end game player decks match the result of 
+    simulating deck interactions saved in game val."""
     
     last_state = None
     game_state_iterator = game_val.GameStateIterator()
