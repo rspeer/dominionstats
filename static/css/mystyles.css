@@ -13,7 +13,7 @@ h1 {
 }
 .intro {
 	color: #ffffff;
-	margin-top: -6px;
+	margin-top: -8px;
 }
 a.introlink {
 	color: #ddd;
@@ -56,11 +56,10 @@ h2.reaction {
 	border-radius: 9px;
 	-moz-box-shadow: 12px rgba(0,0,0,0.6);
 	box-shadow: 12px rgba(0,0,0,0.6);
-	float: right;
+	float: left;
 	position: relative;
 	padding: 5px;
-	margin: 5px;
-	width: 250px;
+	margin: 3px;
 }
 .yellow {
 	background-color: #FFD700;
