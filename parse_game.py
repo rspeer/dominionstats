@@ -127,7 +127,7 @@ def associate_turns_with_owner(game_dict, turns):
     in game_dict.  We can remove the names from the turn."""
     name_to_owner = {}
     for idx, deck in enumerate(game_dict['decks']):
-        name_to_owner[_player_label(idx)] = deck
+        name_to_owner[deck['name']] = deck
         deck['turns'] = []
 
     order_ct = 0
@@ -174,7 +174,7 @@ def parse_game(game_str, dubious_check = False):
 
     game_str: Entire contents of an isotropic log file.
     dubious_check: If true, raise a BogusGame exception if the game is
-      susipcious.
+      suspicious.
 
     returns a dict with the following fields:
       decks: A list of player decks, as documend in parse_deck().
@@ -196,11 +196,6 @@ def parse_game(game_str, dubious_check = False):
 
     turns_str = trash_and_turns.split('Game log')[1]
     turns_str = turns_str[turns_str.find('---'):]
-    for idx, player in enumerate(game_dict['decks']):
-        turns_str = turns_str.replace(' ' + player['name'], 
-                                      ' ' + _player_label(idx))
-        turns_str = turns_str.replace(player['name'] + ' ', 
-                                      _player_label(idx) + ' ')
     
     turns = parse_turns(turns_str)
     
