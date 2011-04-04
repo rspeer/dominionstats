@@ -413,7 +413,7 @@ def db_update_trueskill(team_results, collection):
   for s, pl in zip(ss, players):
     mu, sigma = s.value.MuSigma()
     set_db_entry(pl, mu, sigma, collection)
-    if sigma*3 < 23:
+    if sigma*3 < 20:
         print('%30s : %4.2f +- %4.2f' % (pl, mu, sigma*3))
 
 def AdjustPlayers(players):
@@ -504,6 +504,5 @@ def AdjustPlayers(players):
 
   for s, pl in zip(ss, players):
     pl.skill = s.value.MuSigma()
-
 
 __all__ = ["AdjustPlayers", "SetParameters", "INITIAL_MU", "INITIAL_SIGMA"]

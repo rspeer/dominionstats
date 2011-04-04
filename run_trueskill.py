@@ -51,6 +51,9 @@ def run_trueskill_openings():
                     # a cheap way to uniquify opening names.
                     # Silver+Silver2 means you are the second player to
                     # open Silver+Silver this game. *shrug*
+                    if i == 2:
+                        idx = openings.index(open_name)
+                        openings[idx] = openings[idx] + '1'
                     open_name = ('open%d:' % i) + ('+'.join(opening))
                     i += 1
                 openings.append(open_name)
@@ -60,7 +63,7 @@ def run_trueskill_openings():
                 else:
                     vp = deck['points']
                 results.append((-vp, nturns))
-                teams.append([deck['name'], open_name])
+                teams.append([open_name])
             ranks = results_to_ranks(results)
             team_results = [
                 (team, [0.5, 0.5], rank)
