@@ -353,11 +353,11 @@ def db_update_trueskill(team_results, collection):
   team_counter = 0
   perf_to_team = []
   for team, contrib, rank in team_results:
-    for p in team:
-      perf_to_team.append(SumFactor(ts[team_counter],
-                                    ps[player_counter],
-                                    contrib))
-      player_counter += 1
+    teamsize = len(team)
+    perf_to_team.append(SumFactor(ts[team_counter],
+                                  ps[player_counter:player_counter+teamsize],
+                                  contrib))
+    player_counter += teamsize
     team_counter += 1
 
   team_diff = [SumFactor(d, [t1, t2], [+1, -1])
@@ -402,7 +402,8 @@ def db_update_trueskill(team_results, collection):
   # player skills.
 
   for f in perf_to_team:
-    f.UpdateTerm(0)
+    for t in xrange(len(f.terms)):
+      f.UpdateTerm(t)
   for f in skill_to_perf:
     f.UpdateMean()
 
@@ -412,7 +413,8 @@ def db_update_trueskill(team_results, collection):
   for s, pl in zip(ss, players):
     mu, sigma = s.value.MuSigma()
     set_db_entry(pl, mu, sigma, collection)
-    print('%20s : %4.2f +- %4.2f' % (pl, mu, sigma))
+    if sigma*3 < 23:
+        print('%30s : %4.2f +- %4.2f' % (pl, mu, sigma*3))
 
 def AdjustPlayers(players):
   """
