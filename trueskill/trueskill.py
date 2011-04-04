@@ -310,6 +310,110 @@ def SetParameters(beta=None, epsilon=None, draw_probability=None,
 
 SetParameters()
 
+def get_db_entry(player_name, collection):
+    entry = collection.find_one({'name': player_name})
+    if entry is None:
+        entry = {'mu': INITIAL_MU, 'sigma': INITIAL_SIGMA}
+    return entry
+
+def get_skill(player_name, collection):
+    return get_db_entry(player_name, collection)['mu']
+
+def get_stdev(player_name, collection):
+    return get_db_entry(player_name, collection)['sigma']
+
+def set_db_entry(player_name, mu, sigma, collection):
+    collection.update({'name': player_name},
+                      {'mu': mu, 'sigma': sigma},
+                      upsert=True)
+
+def db_update_trueskill(team_results, collection):
+  """
+  Each team_result is a tuple of
+  (list of player identifiers, contributions, rank).
+  The lowest rank is the winner.
+  """
+  team_results.sort(key=lambda t: t[2])
+  players = [p for team in team_results for p in team[0]]
+  
+  # Create all the variable nodes in the graph.
+  ss = [Variable() for p in players]
+  ps = [Variable() for p in players]
+  ts = [Variable() for t in team_results]
+  ds = [Variable() for t in team_results[:-1]]
+  
+  # Create each layer of factor nodes.  At the top we have priors
+  # initialized to the player's current skill estimate.
+  skill = [PriorFactor(s, Gaussian(mu=get_skill(pl, collection),
+                                   sigma=get_stdev(pl, collection) + GAMMA))
+           for (s, pl) in zip(ss, players)]
+  skill_to_perf = [LikelihoodFactor(s, p, BETA**2)
+                   for (s, p) in zip(ss, ps)]
+  player_counter = 0
+  team_counter = 0
+  perf_to_team = []
+  for team, contrib, rank in team_results:
+    for p in team:
+      perf_to_team.append(SumFactor(ts[team_counter],
+                                    ps[player_counter],
+                                    contrib))
+      player_counter += 1
+    team_counter += 1
+
+  team_diff = [SumFactor(d, [t1, t2], [+1, -1])
+               for (d, t1, t2) in zip(ds, ts[:-1], ts[1:])]
+  
+  # At the bottom we connect adjacent teams with a 'win' or 'draw'
+  # factor, as determined by the rank values.
+  trunc = [TruncateFactor(d,
+                          Vdraw if t1[2] == t2[2] else Vwin,
+                          Wdraw if t1[2] == t2[2] else Wwin,
+                          EPSILON)
+           for (d, t1, t2) in zip(ds, team_results[:-1], team_results[1:])]
+  
+  # Start evaluating the graph by pushing messages 'down' from the
+  # priors.
+
+  for f in skill:
+    f.Start()
+  for f in skill_to_perf:
+    f.UpdateValue()
+  for f in perf_to_team:
+    f.UpdateSum()
+
+  # Because the truncation factors are approximate, we iterate,
+  # adjusting the team performance (t) and team difference (d)
+  # variables until they converge.  In practice this seems to happen
+  # very quickly, so I just do a fixed number of iterations.
+  #
+  # This order of evaluation is given by the numbered arrows in Figure
+  # 1 of the Herbrich paper.
+
+  for i in range(5):
+    for f in team_diff:
+      f.UpdateSum()             # arrows (1) and (4)
+    for f in trunc:
+      f.Update()                # arrows (2) and (5)
+    for f in team_diff:
+      f.UpdateTerm(0)           # arrows (3) and (6)
+      f.UpdateTerm(1)
+
+  # Now we push messages back up the graph, from the teams back to the
+  # player skills.
+
+  for f in perf_to_team:
+    f.UpdateTerm(0)
+  for f in skill_to_perf:
+    f.UpdateMean()
+
+  # Finally, the players' new skills are the new values of the s
+  # variables.
+
+  for s, pl in zip(ss, players):
+    mu, sigma = s.value.MuSigma()
+    set_db_entry(pl, mu, sigma, collection)
+    print('%20s : %4.2f +- %4.2f' % (pl, mu, sigma))
+
 def AdjustPlayers(players):
   """
   Adjust the skills of a list of players.
