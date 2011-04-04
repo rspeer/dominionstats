@@ -66,7 +66,7 @@ def run_trueskill_openings():
                 teams.append([open_name])
             ranks = results_to_ranks(results)
             team_results = [
-                (team, [0.5, 0.5], rank)
+                (team, [1.0], rank)
                 for team, rank in zip(teams, ranks)
             ]
             db_update_trueskill(team_results, collection)
