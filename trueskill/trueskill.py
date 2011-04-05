@@ -323,8 +323,11 @@ def get_stdev(player_name, collection):
     return get_db_entry(player_name, collection)['sigma']
 
 def set_db_entry(player_name, mu, sigma, collection):
+    floor = mu - 3*sigma
+    ceil = mu + 3*sigma
     collection.update({'name': player_name},
-                      {'mu': mu, 'sigma': sigma},
+                      {'$set': {'mu': mu, 'sigma': sigma,
+                                'ceil': ceil, 'floor': floor}},
                       upsert=True)
 
 def db_update_trueskill(team_results, collection):
