@@ -3,7 +3,8 @@ con = get_mongo_connection()
 DB = con.test
 games = DB.games
 
-from trueskill.trueskill import db_update_trueskill
+from trueskill.trueskill import db_update_trueskill, SetParameters
+SetParameters(gamma=0.0001)
 
 def results_to_ranks(results):
     sorted_results = sorted(results)
