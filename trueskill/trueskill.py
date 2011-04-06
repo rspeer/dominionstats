@@ -313,7 +313,10 @@ SetParameters()
 def get_db_entry(player_name, collection):
     entry = collection.find_one({'name': player_name})
     if entry is None:
-        entry = {'mu': INITIAL_MU, 'sigma': INITIAL_SIGMA}
+        if player_name.startswith('open:'):
+            entry = {'mu': 0.0, 'sigma': INITIAL_SIGMA}
+        else:
+            entry = {'mu': INITIAL_MU, 'sigma': INITIAL_SIGMA}
     return entry
 
 def get_skill(player_name, collection):
@@ -416,7 +419,7 @@ def db_update_trueskill(team_results, collection):
   for s, pl in zip(ss, players):
     mu, sigma = s.value.MuSigma()
     set_db_entry(pl, mu, sigma, collection)
-    if sigma*3 < 20:
+    if sigma*3 < 10:
         print('%30s : %4.2f +- %4.2f' % (pl, mu, sigma*3))
 
 def AdjustPlayers(players):

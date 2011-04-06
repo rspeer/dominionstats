@@ -51,16 +51,7 @@ def run_trueskill_openings():
                           deck['turns'][1].get('buys', [])
                 opening.sort()
                 open_name = 'open:'+ ('+'.join(opening))
-                i = 2
-                while open_name in openings:
-                    # a cheap way to uniquify opening names.
-                    # Silver+Silver2 means you are the second player to
-                    # open Silver+Silver this game. *shrug*
-                    if i == 2:
-                        idx = openings.index(open_name)
-                        openings[idx] = 'open1:' + ('+'.join(opening))
-                    open_name = ('open%d:' % i) + ('+'.join(opening))
-                    i += 1
+                if open_name in openings:
                     dups = True
                 openings.append(open_name)
                 nturns = len(deck['turns'])
@@ -69,11 +60,11 @@ def run_trueskill_openings():
                 else:
                     vp = deck['points']
                 results.append((-vp, nturns))
-                teams.append([open_name])
+                teams.append([open_name, deck['name']])
             if not dups:
                 ranks = results_to_ranks(results)
                 team_results = [
-                    (team, [1.0], rank)
+                    (team, [0.5, 0.5], rank)
                     for team, rank in zip(teams, ranks)
                 ]
                 db_update_trueskill(team_results, collection)
