@@ -323,8 +323,11 @@ def get_stdev(player_name, collection):
     return get_db_entry(player_name, collection)['sigma']
 
 def set_db_entry(player_name, mu, sigma, collection):
+    floor = mu - 3*sigma
+    ceil = mu + 3*sigma
     collection.update({'name': player_name},
-                      {'mu': mu, 'sigma': sigma},
+                      {'$set': {'mu': mu, 'sigma': sigma,
+                                'ceil': ceil, 'floor': floor}},
                       upsert=True)
 
 def db_update_trueskill(team_results, collection):
@@ -413,7 +416,7 @@ def db_update_trueskill(team_results, collection):
   for s, pl in zip(ss, players):
     mu, sigma = s.value.MuSigma()
     set_db_entry(pl, mu, sigma, collection)
-    if sigma*3 < 23:
+    if sigma*3 < 20:
         print('%30s : %4.2f +- %4.2f' % (pl, mu, sigma*3))
 
 def AdjustPlayers(players):
@@ -504,6 +507,5 @@ def AdjustPlayers(players):
 
   for s, pl in zip(ss, players):
     pl.skill = s.value.MuSigma()
-
 
 __all__ = ["AdjustPlayers", "SetParameters", "INITIAL_MU", "INITIAL_SIGMA"]

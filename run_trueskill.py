@@ -37,11 +37,15 @@ def run_trueskill_openings():
     collection = DB.trueskill_openings
     collection.remove()
     collection.ensure_index('name')
+    collection.ensure_index('mu')
+    collection.ensure_index('floor')
+    collection.ensure_index('ceil')
     for game in games.find():
         if len(game['decks']) >= 2 and len(game['decks'][1]['turns']) >= 5:
             teams = []
             results = []
             openings = []
+            dups = False
             for deck in game['decks']:
                 opening = deck['turns'][0].get('buys', []) +\
                           deck['turns'][1].get('buys', [])
@@ -52,8 +56,12 @@ def run_trueskill_openings():
                     # a cheap way to uniquify opening names.
                     # Silver+Silver2 means you are the second player to
                     # open Silver+Silver this game. *shrug*
+                    if i == 2:
+                        idx = openings.index(open_name)
+                        openings[idx] = 'open1:' + ('+'.join(opening))
                     open_name = ('open%d:' % i) + ('+'.join(opening))
                     i += 1
+                    dups = True
                 openings.append(open_name)
                 nturns = len(deck['turns'])
                 if deck['resigned']:
@@ -61,11 +69,12 @@ def run_trueskill_openings():
                 else:
                     vp = deck['points']
                 results.append((-vp, nturns))
-                teams.append([deck['name'], open_name])
-            ranks = results_to_ranks(results)
-            team_results = [
-                (team, [0.5, 0.5], rank)
-                for team, rank in zip(teams, ranks)
-            ]
-            db_update_trueskill(team_results, collection)
+                teams.append([open_name])
+            if not dups:
+                ranks = results_to_ranks(results)
+                team_results = [
+                    (team, [1.0], rank)
+                    for team, rank in zip(teams, ranks)
+                ]
+                db_update_trueskill(team_results, collection)
 
