@@ -5,57 +5,54 @@
 	  rel='stylesheet' type='text/css'>
   </head>
   <body>
-    <h2 class="playersearch action">		
-      <form action='player' method='get'> 
-	Player Name:
-	<input type="text" name="player" 
-	       style="width:100px;" /> 
-	<input type="submit" value="View Stats!" /> 
-      </form>
-    </h2>
-    <h1>
-      CouncilRoom.com
-    </h1>
+    <h1>CouncilRoom.com</h1>
     <p class="intro"> 
       This site contains a front end to the Dominion game logs 
       hosted on the wonderful 
       <a class="introlink" href="http://dominion.isotropic.org">
 	Isotropic Dominion server</a>.
       
-      The code backing this website is open source and available on
-      <a class="introlink" href="http://github.com/rrenaud/dominionstats/">GitHub</a>.
+      The code backing this website is open source and available at the 
+      <a class="introlink" href="http://github.com/rrenaud/dominionstats/">
+	Dominion Stats github page</a>.
     </p>
     <p class="small">
       Written by <a href="player?player=rrenaud">rrenaud</a> 
       <a href="mailto:rrenaud@gmail.com">(rrenaud@gmail.com)</a> 
       <a href="http://boardgamegeek.com/user/rrenaud">
-	(BGG profile)</a>,
-      <a href="player?player=Larry">Larry</a>, and
+	(BGG profile)</a> and <a href="player?player=Larry">Larry</a>, and
       <a href="player?player=rspeer">rspeer</a> 
       <a href="mailto:rob.speer@gmail.com">(rob.speer@gmail.com)</a>.
-      
       Graphic design by NemoRathwald/Matt Arnold (mat<span class="z">_REMOVE_</span>t.ma<span class="z">_THIS_</span>tta<span class="z">_FOR_</span>rn@<span class="z">_SPAM_</span>gma<span class="z">_PROTECTION,_</span>il.c<span class="z">_HUMANS!_</span>om) <a href="http://boardgamegeek.com/user/Matt_Arnold">(BGG profile)</a>.
     </p>
     <div class="cardborder yellow">
-      a graph of 
-      <a href="/win_rate_diff_accum.html?cards=Cost%3D%3D5%26%26Actions%3D%3D1"> 
-	winningness vs card advantage</a>
-    </div>
-    <div class="cardborder yellow">
-      a graph of 
-      <a href="/win_weighted_accum_turn.html?cards=Silver,Cost%3D%3D3%20%26%26%20Actions%3E%3D1%20%26%26%20Cards%3E%3D1"> 
-	winningness vs turn card was gained/bought</a>
-    </div> 
-    <div class="cardborder yellow">
-      a rudimentary <a href="/search_query">game search page</a>.
+      card winningness graphs
+      <ul>
+	<li><a href="/win_rate_diff_accum.html?cards=Cost%3D%3D5%26%26Actions%3D%3D1"> 
+	difference in #</a>
+	<li><a href="/win_weighted_accum_turn.html?cards=Silver,Cost%3D%3D3%20%26%26%20Actions%3E%3D1%20%26%26%20Cards%3E%3D1"> 
+	turn</a>
+	  </ul>
     </div> 
     <div class="cardborder yellow">
       <a href="/player?player=rrenaud">player pages</a>
+      <div style="float;right">
+	Name:
+	<form action='player' method='get'> 
+	  <input type="text" name="player" size=15"> 
+	  <br>
+	  <input type="submit" value="View Stats!"> 
+	</form>
+      </div>
+    </div> 
+    <div class="cardborder yellow">
+      <a href="/search_query">game search page</a>
     </div> 
     <div class="cardborder yellow">
       <a href="/popular_buys">popular buys</a>
     </div>
-    <h2 class="treasure">Site Contents</h2> 
+    <div style="clear: both;">&nbsp;</div>
+
     <h2 class="treasure">Suggestions</h2>       
     I'd love to see users rating existing ideas and making new suggestions 
     on the <a href="http://councilroom.uservoice.com/"> 
@@ -79,7 +76,7 @@ to learn all that much of the code.
     it.
 </ul>
 <h2 class="treasure">IRC</h2>  
-Want to chat about CouncilRoom.com?  Join 
+Want to chat about CouncilRoom.com?  Is something broken? Join 
 <a href="http://webchat.freenode.net/?channels=councilroom"> 
   #councilroom</a> on irc.freenode.net.
 

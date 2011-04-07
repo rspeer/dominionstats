@@ -238,7 +238,7 @@ class GamePage:
         body_err_msg = ('<body><b>Error annotating game, tell ' 
                         'rrenaud@gmail.com!</b>')
         try:
-            return parse_game.AnnotateGame(contents)
+            return parse_game.annotate_game(contents)
         except parse_game.BogusGame, b:
             return contents.replace('<body>', body_err_msg + ': foo? ' + 
                                     str(b))

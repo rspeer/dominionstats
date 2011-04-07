@@ -64,6 +64,12 @@ def incremental_parser():
     parser.add_argument('--noincremental', action='store_false', 
                         dest='incremental')
     return parser
+
+def incremental_max_parser():
+   parser = incremental_parser()
+   parser.add_argument('--max_games', default=-1, type=int)
+   return parser
+
 def IncrementalDateRangeCmdLineParser():
     parser = incremental_parser()
     # 20101015 is the first day with standard turn labels
