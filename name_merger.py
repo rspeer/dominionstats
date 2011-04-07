@@ -2,13 +2,11 @@
 
 import re
 
-bgg_spam = re.compile('(b[bg]g[012\- ]?d?l?[012\- ]?[012\- ]?)')
+bgg_spam = re.compile('(b[bg]g[012\- ]?d?l?[012\- ]?[012\- ]?)', re.IGNORECASE)
 
 words_to_strip = ['afk', 'away', '()', '[]', ' - ']
 
 def NormName(name):
-    name = name.lower()
-
     bgg_spam_match = bgg_spam.search(name)
     if bgg_spam_match:
         name = name.replace(bgg_spam_match.group(1), '')
