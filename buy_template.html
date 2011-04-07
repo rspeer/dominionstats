@@ -102,7 +102,7 @@ $def with ( cards, player_data = None )
               <td>$buy_data.available.Frequency()</td>
               <td>$Norm(buy_data.buys)</td>
               <td>$Norm(buy_data.gains)</td>
-              <td>$(Norm(buy_data.any_gained)*100)</td>
+              <td>$(Norm(buy_data.any_gained, 3)*100)</td>
               <td>$Norm(buy_data.trashes)</td>
               <td>$Norm(buy_data.returns, 3)</td>
               <td>$buy_data.any_gained.RenderInterval()</td>
@@ -115,8 +115,8 @@ $def with ( cards, player_data = None )
                 <td>$pdata.available.Frequency()</td>
                 <td>$pdata.available.RenderInterval()</td>
                 <td>$Norm(pdata.buys)</td>
-                <td>$Norm(pdata.any_gained)</td>
-                <td>$(Norm(pdata.any_gained)*100)</td>
+                <td>$Norm(pdata.gains)</td>
+                <td>$(Norm(pdata.any_gained, 3)*100)</td>
                 <td>$Norm(pdata.trashes)</td>
                 <td>$Norm(pdata.returns)</td>
                 <td>$pdata.any_gained.RenderInterval()</td>
