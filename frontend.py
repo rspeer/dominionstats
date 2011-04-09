@@ -65,9 +65,9 @@ class PopularBuyPage:
 
 def make_level_str(floor, ceil):
     if ceil < 0:
-        return '-%d' % (-ceil)
+        return '-%d' % (-ceil + 1)
     elif floor > 0:
-        return '+%d' % (floor)
+        return '+%d' % (floor + 1)
     else:
         return '0'
 
@@ -88,11 +88,12 @@ class OpeningPage:
         web.header("Content-Type", "text/html; charset=utf-8")  
         query_dict = dict(urlparse.parse_qsl(web.ctx.env['QUERY_STRING']))
         db = utils.get_mongo_database()
+        selected_card = ''
+
         if 'card' in query_dict:
             selected_card = query_dict['card']
-        else:
-            selected_card = 'All cards'
-        if selected_card != 'All cards':
+
+        if selected_card not in ('All cards', ''):
             query = db.trueskill_openings.find({'cards': selected_card})
         else:
             query = db.trueskill_openings.find({})
@@ -120,6 +121,10 @@ class OpeningPage:
 
         openings.sort(key=lambda opening: opening['level_key'])
         openings.reverse()
+        if selected_card == '':
+            openings = [op for op in openings
+                        if op['level_key'][0] != 0
+                        or op['cards'] == ['Silver', 'Silver']]
     
         render = web.template.render('')
         return render.openings_template(openings, card_list, selected_card)
