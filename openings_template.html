@@ -1,0 +1,82 @@
+$def with ( openings, card_list, selected_card )
+<html><head>
+<title>Best and Worst Openings</title>
+<style>
+body { font-family: sans-serif; color: #222; }
+table { border-collapse: collapse; }
+td { padding: 3px 15px; }
+tr.level td { border-top: 1px solid #ccc; }
+tr.level td.level { font-weight: bold; color: #000; }
+.lremind { color: #ccc; }
+.c { text-align: center; }
+.up { color: #0c0; font-size: 84%; text-align: center; padding-left: 2ex; }
+.down { color: #c00; font-size: 84%; text-align: center; padding-left: 2ex; }
+b { font-weight: bold; color: #000; }
+.sm { font-size: 70.7%; }
+.c2 { text-align: center; font-size: 70.7%; color: #339; }
+.indeterminate { background-color: #ccc; }
+</style>
+</head>
+<body>
+<h1>Best and Worst Openings</h1>
+<p>This page is meant to be reminiscent of the
+<a href="http://dominion.isotropic.org/leaderboard">Isotropic leaderboard</a>.
+We consider the <i>openings</i> -- the cards you buy on the first two turns --
+as if they were players whose skill adds to yours. The "level" of an opening
+then indicates the minimum amount it should add, or subtract, from your
+effective level.</p>
+<p>We define Silver/Silver to have a skill of 0. The many openings that have
+not distinguished themselves from Silver/Silver (which appear in gray between
+"level +0" and "level -0") are sorted by average skill instead of level.</p>
+<p>(This page will probably go down when it's merged into the main
+councilroom.com.)</p>
+<form action="/openings" method="get">
+<label for="card">Filter for card:</label>
+<select name="card">
+<option>All cards</option>
+$for card in card_list:
+    $if card == selected_card:
+        <option selected>$card</option>
+    $else:
+        <option>$card</option>
+</select>
+<input type="submit" value="Go">
+</form>
+$ samelevel = 0
+$ prevlevel = '-'
+$ rank = 0
+<table>
+<tr><th></th><th>skill range</th><th>rank</th><th>cards</th><th>cost</th></tr>
+$for opening in openings:
+    $code:
+        level = opening['level_str']
+        if level == prevlevel:
+            samelevel += 1
+        else:
+            samelevel = 0
+        rank += 1
+    $if (level == '0'):
+        $if (prevlevel.startswith('+')):
+            <tr class='blank'> 
+            <td></td> <td>&nbsp;</td> <td></td> <td></td> <td></td>
+            </tr>
+        <tr class='indeterminate'> <td></td>
+    $elif (samelevel == 0):
+        $if (level.startswith('-') and prevlevel == '0'):
+            <tr class='blank'> 
+            <td></td> <td>&nbsp;</td> <td></td> <td></td> <td></td>
+            </tr>
+        <tr class='level'><td class='level'>Level $level</td>
+    $elif (samelevel % 10 == 0):
+        <tr><td class='lremind'>Level $level</td>
+    $else:
+        <tr><td></td>
+    $ prevlevel = level
+    <td>$:opening['skill_str']</td>
+    <td class='c2'>$rank</td>
+    <td>$(' / '.join(opening['cards']))</td>
+    <td>$opening['cost']</td>
+    </tr>
+</table>
+</body>
+</html>

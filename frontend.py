@@ -1,3 +1,5 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 import codecs
 import collections
 import math
@@ -17,6 +19,7 @@ from record_summary import RecordSummary
 import datetime
 
 import utils
+import card_info
 
 urls = (
   '/', 'IndexPage',
@@ -28,6 +31,7 @@ urls = (
   '/win_rate_diff_accum.html', 'WinRateDiffAccumPage',
   '/win_weighted_accum_turn.html', 'WinWeightedAccumTurnPage',
   '/popular_buys', 'PopularBuyPage',
+  '/openings', 'OpeningPage',
   '/goals', 'GoalsPage',
   '/(.*)', 'StaticPage'
 )
@@ -58,6 +62,67 @@ class PopularBuyPage:
 
         render = web.template.render('', globals={'round': round})
         return render.buy_template(stats, player_buy_summary)
+
+def make_level_str(floor, ceil):
+    if ceil < 0:
+        return '-%d' % (-ceil)
+    elif floor > 0:
+        return '+%d' % (floor)
+    else:
+        return '0'
+
+def make_level_key(floor, ceil):
+    if ceil < 0:
+        return (-1, ceil)
+    elif floor > 0:
+        return (1, floor)
+    else:
+        return (0, (floor+ceil)/2)
+
+def skill_str(mu, sigma):
+    return u'%3.3f &plusmn; %3.3f' % (mu, sigma*3)
+
+
+class OpeningPage:
+    def GET(self):
+        web.header("Content-Type", "text/html; charset=utf-8")  
+        query_dict = dict(urlparse.parse_qsl(web.ctx.env['QUERY_STRING']))
+        db = utils.get_mongo_database()
+        if 'card' in query_dict:
+            selected_card = query_dict['card']
+        else:
+            selected_card = 'All cards'
+        if selected_card != 'All cards':
+            query = db.trueskill_openings.find({'cards': selected_card})
+        else:
+            query = db.trueskill_openings.find({})
+
+        offset = db.trueskill_openings.find_one({'name':
+            'open:Silver+Silver'})['mu']
+        openings = list(query)
+        card_list = card_info.OPENING_CARDS
+        for opening in openings:
+            for stat in ('mu', 'floor', 'ceil'):
+                opening[stat] -= offset
+
+            floor = opening['floor']
+            ceil = opening['ceil']
+            opening['level_key'] = make_level_key(floor, ceil)
+            opening['level_str'] = make_level_str(floor, ceil)
+            opening['skill_str'] = skill_str(opening['mu'], opening['sigma'])
+            opening['cards'].sort()
+            opening['cards'].sort(key=lambda card: (card_info.Cost(card)),
+                reverse=True)
+            costs = [str(card_info.Cost(card)) for card in opening['cards']]
+            while len(costs) < 2:
+                costs.append('-')
+            opening['cost'] = '/'.join(costs)
+
+        openings.sort(key=lambda opening: opening['level_key'])
+        openings.reverse()
+    
+        render = web.template.render('')
+        return render.openings_template(openings, card_list, selected_card)
 
 class PlayerJsonPage:
     def GET(self):

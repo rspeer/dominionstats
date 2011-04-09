@@ -91,6 +91,8 @@ def update_plays():
     for opening in DB.trueskill_openings.find():
         key = opening['name']
         cards = key[5:].split('+')
+        if cards == ['']:
+            cards = []
         print cards
         DB.trueskill_openings.update(
             {'name': key},
