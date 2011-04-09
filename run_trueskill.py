@@ -86,3 +86,14 @@ def run_trueskill_openings():
             ]
             db_update_trueskill(player_results, player_collection)
 
+def update_plays():
+    DB.trueskill_openings.ensure_index('cards')
+    for opening in DB.trueskill_openings.find():
+        key = opening['name']
+        cards = key[5:].split('+')
+        print cards
+        DB.trueskill_openings.update(
+            {'name': key},
+            {'$set': {'cards': cards}}
+        )
+
