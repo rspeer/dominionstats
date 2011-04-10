@@ -98,8 +98,9 @@ class OpeningPage:
         else:
             query = db.trueskill_openings.find({})
 
-        offset = db.trueskill_openings.find_one({'name':
-            'open:Silver+Silver'})['mu']
+        #offset = db.trueskill_openings.find_one({'name':
+        #    'open:Silver+Silver'})['mu']
+        offset = 0
         openings = list(query)
         card_list = card_info.OPENING_CARDS
         for opening in openings:

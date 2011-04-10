@@ -25,8 +25,11 @@ We consider the <i>openings</i> -- the cards you buy on the first two turns --
 as if they were players whose skill adds to yours. The "level" of an opening
 then indicates the minimum amount it should add, or subtract, from your
 effective level, rounded up.</p>
-<p>We define Silver/Silver to have a skill of 0. The gray box in the middle
-represents "level 0", the many openings that are not yet distinguishable from Silver/Silver. To see these openings, search for a particular card or "All cards".</p>
+<p>
+There are many openings of average or unknown effectiveness in level 0.
+They're hidden by default, but they will show up when you search for a
+particular card or "All cards".
+</p>
 <p>(This URL, on :8001, will probably go down when it's merged into the main
 councilroom.com.)</p>
 <form action="/openings" method="get">
@@ -63,7 +66,10 @@ $for opening in openings:
                 <tr class='indeterminate'> 
                 <td></td> <td></td> <td></td> <td>...</td> <td></td>
                 </tr>
-        <tr class='indeterminate'> <td></td>
+        $if (samelevel == 0):
+            <tr class='indeterminate level'><td class='level'>Level 0</td>
+        $else:
+            <tr class='indeterminate'><td></td>
     $elif (samelevel == 0):
         $if (level.startswith('-') and prevlevel == '0'):
             $if selected_card == '':
