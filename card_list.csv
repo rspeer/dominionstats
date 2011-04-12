@@ -89,7 +89,7 @@
 "Saboteur","Saboteurs",5,0,0,1,0,0,1,0,0,0,0,0,0
 "Salvager","Salvagers",4,0,0,1,0,0,0,0,0,0,1,"?",1
 "Scout","Scouts",4,1,0,1,0,0,0,0,0,0,0,0,0
-"Scrying Pool","Scrying Pools","P2",1,1,1,0,0,0,0,0,0,0,0,0
+"Scrying Pool","Scrying Pools","P2",1,1,1,0,0,1,0,0,0,0,0,0
 "Sea Hag","Sea Hags",4,0,0,1,0,0,1,0,0,0,0,0,0
 "Secret Chamber","Secret Chambers",2,0,0,1,0,0,0,1,0,0,0,"?",0
 "Shanty Town","Shanty Towns",3,2,2,1,0,0,0,0,0,0,0,0,0
