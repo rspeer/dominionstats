@@ -165,7 +165,7 @@ def validate_names(decks):
         used_names.add(name)
 
         if name in ['a', 'and']:
-            raise BogusGame("annoying name " + a)
+            raise BogusGame("annoying name " + name)
         if '---' in name:
             raise BogusGame('--- in name ' + name)
         if name[0] == '.':
@@ -653,7 +653,7 @@ def track_brokenness(parsed_games):
     for card in overall:
         ratios.append(((float(wrongness[card]) / overall[card]), card))
     ratios.sort()
-    if ratios[-1][1] > 0:
+    if ratios[-1][0] > 0:
         print ratios[-10:]
 
 def parse_game_from_file(filename):
@@ -668,8 +668,7 @@ def check_game_sanity(game_val):
     simulating deck interactions saved in game val."""
 
     supply = game_val.Supply()
-    if 'Masquerade' in supply or 'Possession' in supply or 'Black Market' in \
-            supply:
+    if 'Masquerade' in supply or 'Black Market' in supply:
         return True
     
     last_state = None
