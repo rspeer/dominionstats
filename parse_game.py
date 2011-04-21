@@ -27,28 +27,32 @@ NAME_BEFORE_GAINS = re.compile('\.\.\. (.)* gains a')
 NUMBER_COPIES = re.compile('(0|2) copies to')
 GETTING_MONEY_RE = re.compile(' \+\$(\d)+')
 WHICH_IS_WORTH_RE = re.compile(' which is worth \+\$(\d)+')
+VP_TOKEN_RE = re.compile(u'(?P<num>\d+) ▼', re.UNICODE)
 
-KW_TRASHING = ' trashing '
-KW_TRASHES = ' trashes ' 
-KW_IS_TRASHED = ' is trashed.'
-KW_GAINING = ' gaining ' 
-KW_PLAYS = ' plays ' 
+KW_ANOTHER_ONE = 'another one'
 KW_BUYS = ' buys '
-KW_GAINS_A = ' gains a'
-KW_TOKEN = ' token.'
 KW_DISCARDS = ' discards '
-KW_REVEALS = ' reveals '
+KW_GAINING = ' gaining ' 
+KW_GAINS_A = ' gains a'
+KW_GAINS_THE = ' gains the '
+KW_GETS = ' gets +'
+KW_GETTING = ' getting +'
+KW_IS_TRASHED = ' is trashed.'
+KW_PLAYING = ' playing '
+KW_PLAYS = ' plays ' 
+KW_REPLACING = ' replacing '
 KW_RETURNING = ' returning ' 
 KW_REVEALING = ' revealing '
-KW_TO_THE_SUPPLY = ' to the supply'
-KW_GETTING = ' getting +'
-KW_GETS = ' gets +'
-KW_WHICH_IS_WORTH = ' which is worth +$'
-KW_TURNS_UP_A = ' turns up a'
+KW_REVEALS = ' reveals '
 KW_REVEALS_A = ' reveals a'
-KW_REPLACING = ' replacing '
-KW_WITH_A = ' with a '
+KW_TOKEN = ' token.'
+KW_TO_THE_SUPPLY = ' to the supply'
+KW_TRASHES = ' trashes ' 
 KW_TRASHES_IT = 'trashes it.'
+KW_TRASHING = ' trashing '
+KW_TURNS_UP_A = ' turns up a'
+KW_WHICH_IS_WORTH = ' which is worth +$'
+KW_WITH_A = ' with a'
 KEYWORDS = [locals()[w] for w in dict(locals()) if w.startswith('KW_')]
 
 class BogusGame(Exception):
@@ -115,6 +119,9 @@ def assign_win_points(game_dict):
     for player in decks:
         player['win_points'] = win_points if player in winners else 0.0
 
+def _player_label(ind):
+    return 'player' + str(ind)
+
 def associate_game_with_norm_names(game_dict):
     """ Fill players field in game_dict with list of normed player names."""
     game_dict['players'] = []
@@ -127,7 +134,7 @@ def associate_turns_with_owner(game_dict, turns):
     in game_dict.  
 
     Remove the names from the turn, since it is redundant with the name
-    on the player-level dict."""
+    on the player level dict."""
     name_to_owner = {}
     for idx, deck in enumerate(game_dict['decks']):
         name_to_owner[deck['name']] = deck
@@ -157,6 +164,10 @@ def validate_names(decks):
             raise BogusGame('Duplicate name %s' % name)
         used_names.add(name)
 
+        if name in ['a', 'and']:
+            raise BogusGame("annoying name " + a)
+        if '---' in name:
+            raise BogusGame('--- in name ' + name)
         if name[0] == '.':
             raise BogusGame('name %s starts with period' % name)
         for kword in KEYWORDS:
@@ -167,6 +178,30 @@ def validate_names(decks):
         raise BogusGame('not everyone took a turn?')
     if len(decks) <= 1:
         raise BogusGame('only one player')
+
+def canonicalize_names(turns_str, player_names):
+    """ Return a new string in which all player names are replaced by
+    player0, player1, ..."""
+    player_ind_name_pairs = list(enumerate(player_names))
+    # Replace longer names first, short names might contain the longer ones.
+    player_ind_name_pairs.sort(key = lambda ind_name_pair: 
+                               -len(ind_name_pair[1]))
+    for idx, player in player_ind_name_pairs:
+        # This is complicated (matching extra stuff to the left and right
+        # of name rather than straight string replace) so that we 
+        # can allow for annoying names like 'd' that occur as
+        # substrings of regular text.
+        match_player_name = re.compile(
+            '(^|[ \(])' +       # start with newline, space, or open paren
+            re.escape(player) + # followed by player name
+            "([ '\)])",         # ending with space or ' or close paren
+            re.MULTILINE)
+        def _replace_name_by_label(match):
+            """ keep surrounding delims, replace player name with playerX"""
+            return match.group(1) + _player_label(idx) + match.group(2)
+        turns_str = match_player_name.sub(_replace_name_by_label, turns_str)
+
+    return turns_str
 
 def parse_game(game_str, dubious_check = False):
     """ Parse game_str into game dictionary
@@ -193,10 +228,12 @@ def parse_game(game_str, dubious_check = False):
     game_dict['decks'] = decks
     validate_names(decks)
 
+    names_list = [d['name'] for d in game_dict['decks']]
     turns_str = trash_and_turns.split('Game log')[1]
     turns_str = turns_str[turns_str.find('---'):]
+    turns_str = canonicalize_names(turns_str, names_list)
     
-    turns = parse_turns(turns_str)
+    turns = parse_turns(turns_str, names_list)
     
     associate_game_with_norm_names(game_dict)
     associate_turns_with_owner(game_dict, turns)
@@ -228,6 +265,8 @@ def parse_header(header_str):
 
 PLACEMENT_RE = re.compile('#\d (.*)')
 POINTS_RE = re.compile(': (-*\d+) points(\s|(\<\\/b\>))')
+# TODO: try this, seems way more readable?
+# POINTS_RE = re.compile(': (-*\d+) points(\s|(' + re.escape('</b>') + '))')
 
 def parse_deck(deck_str):
     """ Given an isotropic deck string, return a dictionary containing the
@@ -316,10 +355,12 @@ def name_and_rest(line, term):
     name = _strip_leading(line[:start_of_term], ' .').strip()
     return name, line[start_of_term + len(term):]
 
-def _delete_keys_with_empty_vals(dict_obj):
+def delete_keys_with_empty_vals(dict_obj):
     """ Remove keys from object associated with values that are False/empty."""
     keys_to_die = []
-    for k in dict_obj:
+    for k in dict_obj.keys():
+        if isinstance(dict_obj[k], dict):
+            delete_keys_with_empty_vals(dict_obj[k])
         if not dict_obj[k]:
             keys_to_die.append(k)
     for k in keys_to_die:
@@ -344,7 +385,46 @@ def count_money(plays):
             money += card_info.MoneyValue(card)
     return money
 
-def parse_turn(turn_blob):
+PLAYER_IND_RE = re.compile('player(?P<num>\d+)')
+
+class PlayerTracker:
+    ''' The player tracker is used to keep track of the active player being
+    modified by the gain and trashes actions in a sequence of isotropic
+    game lines. '''
+
+    def __init__(self):
+        self.player_stack = [None]
+        self.orig_player = None
+
+    def get_active_player(self, line):
+        ''' Feed the next line to the tracker, it returns the active player.'''
+        mentioned_players = self._get_player_inds(line)
+
+        indent_level = line.count('...')
+        if indent_level >= len(self.player_stack):
+            self.player_stack.append(self.player_stack[-1])
+        while len(self.player_stack) > indent_level + 1:
+            self.player_stack.pop()
+
+        if len(mentioned_players) > 0:
+            self.player_stack[-1] = mentioned_players[-1]
+            if self.orig_player == None:
+                self.orig_player = mentioned_players[-1]
+
+        return self.player_stack[-1]
+
+    def current_player(self):
+        ''' Return the player whose turn it is.
+        This requires at least one call to get_active_player() first. '''
+        return self.orig_player
+
+    def _get_player_inds(self, line):
+        '''return list of player indicies in given line.
+        eg, line "player1 trashes player2's ..." -> [1, 2]
+        '''
+        return map(int, PLAYER_IND_RE.findall(line))
+
+def parse_turn(turn_blob, names_list):
     """ Parse the information from a given turn.
 
     Return a dict containing the following fields.  If any of the fields have
@@ -357,6 +437,8 @@ def parse_turn(turn_blob):
     gains: List of cards gained.
     trashes: List of cards trashed.
     returns: List of cards returned.
+    ps_tokens: Number of pirate ship tokens gained.
+    vp_tokens: Number of victory point tokens gained.
     money: Amount of money available during entire buy phase.
     opp: Dict keyed by opponent name, containing dicts with trashes/gains.
     """
@@ -368,81 +450,81 @@ def parse_turn(turn_blob):
         turn_no = int(parsed_header.group('turn_no'))
     else:
         raise ValueError("Could not parse header " + header)
-    
+
+    ret = {'gains': [], 'trashes': []}
     plays = []
-    gains = []
     buys = []
-    trashes = []
     returns = []
     turn_money = 0
+    vp_tokens = 0
+    ps_tokens = 0
     opp_turn_info = collections.defaultdict(lambda: {'gains': [],
                                                      'trashes': []})
-    last_noted_player = None
+    tracker = PlayerTracker()
     for line_idx, line in enumerate(lines):
+        active_player = tracker.get_active_player(line)
+        if active_player == tracker.current_player():
+            targ_obj = ret
+        else:
+            targ_obj = opp_turn_info[names_list[active_player]]
+
         has_trashing = KW_TRASHING in line
         has_trashes = KW_TRASHES in line
         has_gaining = KW_GAINING in line
+
         if has_trashes:
             if has_gaining:
                 # Trading post turn, first trashes, then gaining
                 gain_start = line.find(KW_GAINING)
-                trashes.extend(capture_cards(line[:gain_start]))
-                gains.extend(capture_cards(line[gain_start:]))
-                continue            
-            if line.endswith(KW_TRASHES_IT):
-                if KW_TURNS_UP_A in line:
-                    # Swinder turn
-                    last_noted_player, rest = name_and_rest(line, 
-                                                            KW_TURNS_UP_A) 
-                elif KW_REVEALS_A in line:
-                    # Sab turn
-                    last_noted_player, rest = name_and_rest(line, KW_REVEALS_A)
-                else:
-                    assert False, 'Did not handle trashing in line %s' % line 
-                
-                opp_turn_info[last_noted_player]['trashes'].extend(
-                    capture_cards(line))
-
-            opp_n, rest = name_and_rest(line, KW_TRASHES)
-            if opp_n == name:
-                trashes.extend(capture_cards(rest))
-            else:
-                cards_opp_trashed = capture_cards(rest)
-                if cards_opp_trashed:
-                    opp_turn_info[opp_n]['trashes'].extend(cards_opp_trashed)
-
+                targ_obj['trashes'].extend(capture_cards(line[:gain_start]))
+                targ_obj['gains'].extend(capture_cards(line[gain_start:]))
+                continue
+            targ_obj['trashes'].extend(capture_cards(line))
         if KW_WITH_A in line:
             if KW_REPLACING in line:
-                assert last_noted_player in line
                 new_gained_portion = line[line.find(KW_WITH_A):]
-                opp_turn_info[last_noted_player]['gains'].extend(capture_cards(
-                        new_gained_portion))
-        if KW_PLAYS in line: 
+                targ_obj['gains'].extend(capture_cards(new_gained_portion))
+        if KW_PLAYS in line or KW_PLAYING in line: 
             plays.extend(capture_cards(line))
-        if has_gaining and not KW_TOKEN in line: 
-            gains.extend(capture_cards(line[line.find(KW_GAINING):])) 
+        if has_gaining:
+            if KW_ANOTHER_ONE in line: # mints a gold gaining another one
+                targ_obj['gains'].extend(capture_cards(line))
+            else:
+                # gaining always associated with current player?
+                ret['gains'].extend( 
+                    capture_cards(line[line.find(KW_GAINING):])) 
         if KW_BUYS in line: 
             buys.extend(capture_cards(line))
+        if KW_GAINS_THE in line:
+            targ_obj['gains'].extend(capture_cards(line))
         if has_trashing: 
-            trashes.extend(capture_cards(line))
-        if KW_GAINS_A in line and not KW_TOKEN in line:
-            opp_name, rest = name_and_rest(line, KW_GAINS_A)
-            if KW_DISCARDS in opp_name:  
-                opp_name = opp_name[:opp_name.find(KW_DISCARDS)]
-            opp_turn_info[opp_name]['gains'].extend(capture_cards(rest))
+            if KW_REVEALING in line:  # reveals watchtower trashing ...
+                trashed = capture_cards(line[line.find(KW_TRASHING):])
+                targ_obj['trashes'].extend(trashed)
+            else:
+                rest = line
+                if KW_GAINING in line:
+                    rest = line[:line.find(KW_GAINING)]
+                targ_obj['trashes'].extend(capture_cards(rest))
+        if KW_GAINS_A in line:
+            if KW_TOKEN in line:
+                assert 'Pirate Ship' in capture_cards(line)
+                ps_tokens += 1
+            else:
+                rest = line[line.find(KW_GAINS_A):]
+                targ_obj['gains'].extend(capture_cards(rest))
         if KW_IS_TRASHED in line:
             # Saboteur after revealing cards, name not mentioned on this line.
-            assert last_noted_player != None, line
             cards = capture_cards(line)
-            opp_turn_info[last_noted_player]['trashes'].extend(cards)
+            targ_obj['trashes'].extend(cards)
         if KW_REVEALS in line:
-            last_noted_player, rest = name_and_rest(line, KW_REVEALS)
             card_revealed = capture_cards(line)
 
             # arg, ambassador requires looking at the next line to figure
             # out how many copies were returned
             if (card_revealed and line_idx + 1 < len(lines) and 
-                KW_RETURNING in lines[line_idx + 1]):
+                KW_RETURNING in lines[line_idx + 1] and not
+                KW_REVEALING in lines[line_idx + 1]):
                 next_line = lines[line_idx + 1]
                 num_copies = 1
                 num_copies_match = NUMBER_COPIES.search(next_line)
@@ -460,20 +542,24 @@ def parse_turn(turn_blob):
             worth_match = WHICH_IS_WORTH_RE.search(line)
             assert bool(worth_match), line
             turn_money += int(worth_match.group(1))
+        if u'▼' in line:
+            vp_tokens += int(VP_TOKEN_RE.search(line).group('num'))
             
-    for opp in opp_turn_info:
-        _delete_keys_with_empty_vals(opp_turn_info[opp])
+    for opp in opp_turn_info.keys():
+        delete_keys_with_empty_vals(opp_turn_info[opp])
     # TODO:  Consider getting rid of turn number from the DB?  It's easy
     # to recompute from the game state anyway, and it would save some space.
-    ret = {'name': name, 'number': turn_no, 'plays': plays , 
-           'buys': buys, 'gains': gains, 'trashes': trashes, 
-           'returns': returns, 'money': count_money(plays) + turn_money,
-           'opp': dict(opp_turn_info)}
+    ret.update({'name': names_list[tracker.current_player()], 
+                'number': turn_no, 
+                'plays': plays , 'buys': buys, 'returns': returns,
+                'money': count_money(plays) + turn_money,
+                'vp_tokens': vp_tokens, 'ps_tokens': ps_tokens,
+                'opp': dict(opp_turn_info)})
 
-    _delete_keys_with_empty_vals(ret)
+    delete_keys_with_empty_vals(ret)
     return ret
 
-def parse_turns(turns_blob):
+def parse_turns(turns_blob, names_list):
     """ Return a list of turn objects, as documented by parse_turn(). """
     turns = []
     turn_blobs = TURN_HEADER_NO_GROUP_RE.split(turns_blob)
@@ -481,24 +567,24 @@ def parse_turns(turns_blob):
         turn_blobs = turn_blobs[1:]
     turn_headers = TURN_HEADER_NO_GROUP_RE.findall(turns_blob)
     for turn_header, turn_blob in zip(turn_headers, turn_blobs):
-        turns.append(parse_turn(turn_header + turn_blob))
+        turns.append(parse_turn(turn_header + turn_blob, names_list))
     return turns
 
 def outer_parse_game(filename):
     """ Parse game from filename. """
     contents = codecs.open(filename, 'r', encoding='utf-8').read()
     if not contents:
-        print 'empty game'
+        # print 'empty game'
         return None
     if '<b>game aborted' in contents:
-        print 'skipping aborted game', filename
+        # print 'skipping aborted game', filename
         return None
     try:
         parsed = parse_game(contents, dubious_check = True)
         parsed['_id'] = filename.split('/')[-1]
         return parsed
     except BogusGame, bogus_game_exception:
-        print 'skipped', filename, 'because', bogus_game_exception.reason
+        # print 'skipped', filename, 'because', bogus_game_exception.reason
         return None
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
@@ -509,7 +595,7 @@ def segments(lis, chunk_size):
 
 def dump_segment(arg_tuple):
     """ Write a json serialized version of games to to name determined by 
-    arg tuple.  It's in this annoying format for compatibility with 
+    arg tuple.  arg_tuple is in this annoying format for compatibility with 
     multiprocessing.pool.map.
     """
     idx, year_month_day, segment = arg_tuple
@@ -533,7 +619,7 @@ def convert_to_json(year_month_day, games_to_parse = None):
         print 'no data files to parse in ', year_month_day
         return
 
-    # games_to_parse = games_to_parse[:100]
+    # games_to_parse = games_to_parse[:1000]
     pool = multiprocessing.Pool()
     parsed_games = pool.map(outer_parse_game, games_to_parse, 
                             chunksize=50)
@@ -541,28 +627,34 @@ def convert_to_json(year_month_day, games_to_parse = None):
     print year_month_day, 'before filtering', len(parsed_games)
     parsed_games = [x for x in parsed_games if x]
 
-    # wrongness = collections.defaultdict(int)
-    # overall = collections.defaultdict(int)
-    # for raw_game in parsed_games:
-    #     accurately_parsed = check_game_sanity(game.Game(raw_game))
-    #     if not accurately_parsed:
-    #         print raw_game['_id']
-    #     for card in raw_game['supply']:
-    #         if not accurately_parsed:
-    #             wrongness[card] += 1
-    #         overall[card] += 1
-
-    # ratios = []
-    # for card in overall:
-    #     ratios.append(((float(wrongness[card]) / overall[card]), card))
-    # ratios.sort()
-    # print ratios[-10:]
+    track_brokenness(parsed_games)
 
     print year_month_day, 'after filtering', len(parsed_games)
     game_segments = list(segments(parsed_games, 100))
     labelled_segments = [(i, year_month_day, c) for i, c in
                          enumerate(game_segments)]
     pool.map(dump_segment, labelled_segments)
+
+
+def track_brokenness(parsed_games):
+    """Print some summary statistics about cards that cause bad parses."""
+    wrongness = collections.defaultdict(int)
+    overall = collections.defaultdict(int)
+    for raw_game in parsed_games:
+        accurately_parsed = check_game_sanity(game.Game(raw_game))
+        #if not accurately_parsed:
+        #    print raw_game['_id']
+        for card in raw_game['supply']:
+            if not accurately_parsed:
+                wrongness[card] += 1
+            overall[card] += 1
+
+    ratios = []
+    for card in overall:
+        ratios.append(((float(wrongness[card]) / overall[card]), card))
+    ratios.sort()
+    if ratios[-1][1] > 0:
+        print ratios[-10:]
 
 def parse_game_from_file(filename):
     """ Return a parsed version of a given filename. """
@@ -574,6 +666,11 @@ def check_game_sanity(game_val):
 
     In particular, check that the end game player decks match the result of 
     simulating deck interactions saved in game val."""
+
+    supply = game_val.Supply()
+    if 'Masquerade' in supply or 'Possession' in supply or 'Black Market' in \
+            supply:
+        return True
     
     last_state = None
     game_state_iterator = game_val.GameStateIterator()
@@ -584,9 +681,9 @@ def check_game_sanity(game_val):
         computed_deck_comp = last_state.GetDeckComposition(
             player_deck.Name()) 
 
-        _delete_keys_with_empty_vals(parsed_deck_comp)
+        delete_keys_with_empty_vals(parsed_deck_comp)
         computed_dict_comp = dict(computed_deck_comp)
-        _delete_keys_with_empty_vals(computed_dict_comp)
+        delete_keys_with_empty_vals(computed_dict_comp)
         
         if parsed_deck_comp != computed_deck_comp:
             found_something_wrong = False
@@ -600,6 +697,7 @@ def check_game_sanity(game_val):
                     found_something_wrong = True
             if found_something_wrong:
                 print player_deck.Name(), game_val.Id()
+                print ' '.join(game_val.Supply())
                 print
                 return False
     return True
@@ -624,7 +722,7 @@ def main():
 
         convert_to_json(year_month_day)
 
-def annotate_game(contents):
+def annotate_game(contents, debug=False):
     """ Decorate game contents with some JS that makes a score keeper 
     and provides anchors per turn."""
     parsed_game = parse_game(contents, dubious_check = False)
@@ -652,6 +750,8 @@ def annotate_game(contents):
 """ % (json.dumps(parsed_game, indent=2), 
        open('static/card_list.js', 'r').read())
     contents = contents[start_body:]
+
+    cur_turn_ind = 0
     
     while True:
         cur_match = TURN_HEADER_RE.search(contents)
@@ -666,8 +766,13 @@ def annotate_game(contents):
             ret += '<div id="%s"></div>' % turn_id
             ret += '<a name="%s"></a><a href="#%s">%s</a>' % (
                 show_turn_id, show_turn_id, cur_match.group())
-                
+
             contents = contents[cur_match.end():]
+            if debug:
+                ret += '<br>' + (
+                    pprint.pformat(game_val.Turns()[cur_turn_ind].turn_dict,
+                                   ).replace('\n', '<br>'))
+            cur_turn_ind += 1
         else:
             break
     before_end = contents.find('</html')
