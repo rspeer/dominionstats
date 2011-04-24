@@ -302,7 +302,7 @@ class GamePage:
     def GET(self):
         web.header("Content-Type", "text/html; charset=utf-8")  
         query_dict = dict(urlparse.parse_qsl(web.ctx.env['QUERY_STRING']))
-        debug = query_dict.get('debug', False)
+        debug = int(query_dict.get('debug', 0))
         game_id = query_dict['game_id']
         yyyymmdd = game.Game.DateFromId(game_id)
         contents = codecs.open('static/scrape_data/%s/%s' % (

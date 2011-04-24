@@ -24,14 +24,22 @@ class PlayerDeckChange:
             getattr(self, cat).extend(getattr(other_changes, cat))
 
 class Turn:
-    def __init__(self, turn_dict, game, player):
+    def __init__(self, turn_dict, game, player, turn_no, poss_no):
         self.game = game
         self.player = player
         self.plays = turn_dict.get('plays', [])
         self.gains = turn_dict.get('gains', [])
         self.buys = turn_dict.get('buys', [])
-        self.turn_no = turn_dict['number']
+        self.turn_no = turn_no
+        self.poss_no = poss_no
         self.turn_dict = turn_dict
+
+    def __repr__(self):
+        encoded = dict(self.turn_dict)
+        encoded['player'] = self.player.Name()
+        encoded['turn_no'] = self.turn_no
+        encoded['poss_no'] = self.poss_no
+        return pprint.pformat(encoded)
 
     def Player(self):
         return self.player
@@ -41,6 +49,9 @@ class Turn:
 
     def TurnNo(self):
         return self.turn_no
+
+    def PossNo(self):
+        return self.poss_no
 
     def DeckChanges(self):
         ret = []
@@ -56,6 +67,7 @@ class Turn:
             change = PlayerDeckChange(opp_name)
             change.gains.extend(info_dict.get('gains', []))
             change.trashes.extend(info_dict.get('trashes', []))
+            change.returns.extend(info_dict.get('returns', []))
             ret.append(change)
 
         return ret
@@ -117,9 +129,22 @@ class Game:
         self.id = game_dict.get('_id', 'unidentified')
 
         for raw_pd, pd in zip(game_dict['decks'], self.player_decks):
+            turn_ct = 0
+            poss_ct = 0
+            out_ct = 0
             for turn in raw_pd['turns']:
-                self.turns.append(Turn(turn, game_dict, pd))
-        self.turns.sort(key=lambda x: (x.TurnNo(), x.Player().TurnOrder()))
+                if 'poss' in turn:
+                    poss_ct += 1
+                elif 'outpost' in turn:
+                    out_ct = 1
+                else:
+                    turn_ct += 1
+                    poss_ct, out_ct = 0, 0
+                self.turns.append(Turn(turn, game_dict, pd, turn_ct, poss_ct))
+                    
+        self.turns.sort(key=lambda x: (x.TurnNo(), 
+                                       x.Player().TurnOrder(),
+                                       x.PossNo()))
 
     def GetPlayerDeck(self, player_name):
         for p in self.player_decks:

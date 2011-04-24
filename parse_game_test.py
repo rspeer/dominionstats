@@ -89,6 +89,31 @@ class PlayerTrackerTest(unittest.TestCase):
                               expected_output, line)
         self.assertEquals(self.tracker.current_player(), 1)
 
+class ParseTurnHeaderTest(unittest.TestCase):
+    def test_normal_turn(self):
+        parsed_turn_header = parse_game.parse_turn_header(
+            "--- player0's turn 3 ---", DEF_NAME_LIST)
+        self.assertEquals(parsed_turn_header['name'], 'p0')
+        self.assertEquals(parsed_turn_header['turn_no'], 3)
+
+    def test_possesion_turn(self):
+        parsed_turn_header = parse_game.parse_turn_header(
+            "--- player0's turn (possessed by player1) ---", DEF_NAME_LIST)
+        self.assertEquals(parsed_turn_header['name'], 'p0')
+        self.assertEquals(parsed_turn_header['pname'], 'p1')
+
+    def test_outpost_turn(self):
+        parsed_turn_header = parse_game.parse_turn_header(
+            """--- player0's extra turn (from <span class=card-duration>Outpost</span>) ---""", DEF_NAME_LIST)
+        self.assertEquals(parsed_turn_header['name'], 'p0')
+        self.assertEquals(parsed_turn_header['outpost'], True)
+
+    def test_header_with_leading_space(self):
+        parsed_turn_header = parse_game.parse_turn_header(
+            "   --- player0's turn 3 ---", DEF_NAME_LIST)
+        self.assertEquals(parsed_turn_header['name'], 'p0')
+        self.assertEquals(parsed_turn_header['turn_no'], 3)
+
 class ParseTurnTest(unittest.TestCase):
     def test_parse_turn(self):
         turn_info = parse_game.parse_turn(
@@ -539,7 +564,6 @@ player0 buys a <span class=card-victory-action>Nobles</span>.
         self.assertEquals(turn_info['name'], 'p0')
         self.assertEquals(turn_info['plays'],
                           ['Coppersmith', 'Silver', 'Copper', 'Copper'])
-        self.assertEquals(turn_info['number'], 3)
         self.assertEquals(turn_info['money'], 6)
 
     def test_UTF8_name(self):
@@ -549,6 +573,51 @@ player1 buys a <span class=card-none>Workshop</span>.
 """, ['', u'Görling'])
         self.assertEquals(turn_info['name'], u'Görling')
         self.assertEquals(turn_info['money'], 3)
+
+    def test_possessed_turn(self):
+        turn_info = parse_game.parse_turn(
+            u"""--- player0's turn (possessed by player1) ---
+player0 plays a <span class=card-none>University</span>.
+... gaining a <span class=card-none>Mint</span>.
+... ... player1 gains the <span class=card-none>Mint</span>.
+player0 plays a <span class=card-none>University</span>.
+... gaining a <span class=card-none>Bazaar</span>.
+... ... player1 gains the <span class=card-none>Bazaar</span>.""", 
+            DEF_NAME_LIST)
+        self.assertEquals(turn_info['name'], 'p1')
+        self.assertEquals(turn_info['gains'], ['Mint', 'Bazaar'])
+        self.assertTrue(turn_info['poss'])
+        self.assertFalse('opp' in turn_info)
+
+    def test_possessed_turn2(self):
+        turn_info = parse_game.parse_turn(
+            u"""--- player0's turn (possessed by player1) ---
+ player0 plays a <span class=card-none>Remodel</span>.
+ ... trashing a <span class=card-none>Mountebank</span>.
+ ... gaining a <span class=card-treasure>Gold</span>.
+ ... ... player1 gains the <span class=card-treasure>Gold</span>.
+ player0 plays 2 <span class=card-treasure>Silvers</span>.
+ player0 buys a <span class=card-none>Remodel</span>.
+ ... player1 gains the <span class=card-none>Remodel</span>.
+ (player0 reshuffles.)
+ player0 discards the "trashed" card (a <span class=card-none>Mountebank</span>).""", DEF_NAME_LIST)
+        self.assertEquals(turn_info['name'], 'p1')
+        self.assertEquals(turn_info['gains'], ['Gold', 'Remodel'])
+        self.assertFalse('buys' in turn_info)
+
+    def test_possession_ambassador(self):
+        turn_info = parse_game.parse_turn(u"""
+--- player0's turn (possessed by player1) ---</a> 
+    player0 plays an <span class=card-none>Ambassador</span>.
+    ... revealing 2 <span class=card-victory>Duchies</span> and returning them to the supply.
+    ... player1 gains a <span class=card-victory>Duchy</span>.
+    player0 plays a <span class=card-treasure>Silver</span>.
+    player0 buys an <span class=card-victory>Estate</span>.
+    ... player1 gains the <span class=card-victory>Estate</span>.""",
+                                          DEF_NAME_LIST)
+        self.assertEquals(turn_info['gains'], ['Duchy', 'Estate'])
+        self.assertEquals(turn_info['opp']['p0']['returns'], [
+                'Duchy', 'Duchy'])
 
 class CanonicalizeNamesTest(unittest.TestCase):
     def test_canonicalize_names(self):
@@ -584,12 +653,59 @@ player0 plays 3 <span class=card-treasure>Coppers</span>.""")
     player0 buys a <span class=card-none>Masquerade</span>.
     (player0 reshuffles.)""")
                           
+class SplitTurnsTest(unittest.TestCase):
+    def test_split_simple(self):
+        split_turns = parse_game.split_turns(
+"""--- player1's turn 1 ---
+Foo
+--- player2's turn 2 ---
+Bar""")
+        self.assertEquals(len(split_turns), 2)
+        self.assertEquals(split_turns[0], "--- player1's turn 1 ---\nFoo\n")
+        self.assertEquals(split_turns[1], "--- player2's turn 2 ---\nBar\n")
 
+    def test_possesion_split(self):
+        split_turns = parse_game.split_turns(
+"""--- player0's turn (possessed by player1) ---
+player0 plays an <span class=card-duration>Outpost</span>.
+--- player2's turn 2 ---
+Bar
+--- player3's turn 1 ---
+Ick""")
+        self.assertEquals(len(split_turns), 3)
+        self.assertEquals(split_turns[0], 
+ "--- player0's turn (possessed by player1) ---\n"
+ "player0 plays an <span class=card-duration>Outpost</span>.\n")
+        
+    def test_outpost_split(self):
+        split_turns = parse_game.split_turns(
+"""--- player0's turn 1 ---
+... foo
+--- player0's extra turn (from <span class=card-duration>Outpost</span>) ---
+bar""")
+        self.assertEquals(len(split_turns), 2)
+
+    def test_curious_split(self):
+        split_turns = parse_game.split_turns(
+u"""--- player3's turn 1 ---
+player3 plays 3 <span class=card-treasure>Coppers</span>.
+player3 buys a <span class=card-treasure>Silver</span>.
+<span class=logonly>(player3 draws: an <span class=card-victory>Estate</span> and 4 <span class=card-treasure>Coppers</span>.)</span>
+
+   --- player2's turn 1 ---
+   player2 plays 5 <span class=card-treasure>Coppers</span>.
+   player2 buys a <span class=card-none>Festival</span>.
+    <span class=logonly>(player2 draws: 3 <span class=card-victory>Estates</span> and 2 <span class=card-treasure>Coppers</span>.)</span>
+
+--- player3's turn 2 ---
+player3 plays 4 <span class=card-treasure>Coppers</span>.
+player3 buys a <span class=card-treasure>Silver</span>.
+(player3 reshuffles.)""")
+        self.assertEquals(len(split_turns), 3)
 
 class ParseTurnsTest(unittest.TestCase):
     def test_simple_input(self):
-        turns_info = parse_game.parse_turns(u"""
---- player3's turn 1 ---
+        turns_info = parse_game.parse_turns(u"""--- player3's turn 1 ---
 player3 plays 3 <span class=card-treasure>Coppers</span>.
 player3 buys a <span class=card-treasure>Silver</span>.
 <span class=logonly>(player3 draws: an <span class=card-victory>Estate</span> and 4 <span class=card-treasure>Coppers</span>.)</span>
@@ -618,6 +734,27 @@ player3 buys a <span class=card-treasure>Silver</span>.
         self.assertEquals(turn2Z['name'], 'p3')
         self.assertEquals(turn2Z['plays'], ['Copper'] * 4)
         self.assertEquals(turn2Z['buys'], ['Silver'])
+
+    def test_possesion_output_turns(self):
+        turns = parse_game.parse_turns(u"""--- player0's turn (possessed by player1) ---
+player0 plays an <span class=card-duration>Outpost</span>.
+player0 plays 3 <span class=card-treasure>Golds</span>.
+player0 buys a <span class=card-treasure>Gold</span>.
+... player1 gains the <span class=card-treasure>Gold</span>.
+<span class=logonly>(player0 draws: a <span class=card-treasure>Gold</span>, a <span class=card-none>Village</span>, and an <span class=card-duration>Outpost</span>.)</span> 
+ 
+--- player0's extra turn (from <span class=card-duration>Outpost</span>) ---
+player0 plays a <span class=card-none>Village</span>.
+... (player0 reshuffles.)
+... drawing 1 card and getting +2 actions.
+player0 plays an <span class=card-duration>Outpost</span>.
+player0 plays 2 <span class=card-treasure>Golds</span>.
+player0 buys a <span class=card-treasure>Gold</span>.
+<span class=logonly>(player0 draws: 2 <span class=card-treasure>Golds</span> and a <span class=card-none>Chapel</span>.)</span> """, DEF_NAME_LIST)
+        self.assertEquals(len(turns), 2)
+
+        self.assertTrue('outpost' in turns[1])
+        self.assertEqual(turns[1]['buys'], ['Gold'])
 
 class ParseDeckTest(unittest.TestCase):
     def test_deck(self):
@@ -917,19 +1054,75 @@ Turn order is 8----------------------D and then dcg.
 All but one player has resigned.
 dcg wins!
 </pre></body></html>"""
-    def test_parse_game_with_evil_name(self):
-        parsed_game = parse_game.parse_game(ParseGameTest.EVIL_GAME_CONTENTS)
-        self.assertEquals(set(parsed_game['players']), 
-                          set([u'8----------------------D', u'dcg']))
-
     def test_parse_game_with_bogus_check(self):
         self.assertRaises(parse_game.BogusGame, parse_game.parse_game, 
                           ParseGameTest.EVIL_GAME_CONTENTS, True)
 
-    def test_parse_game_with_reverse_turn_order(self):
-        parsed_game = parse_game.parse_game(ParseGameTest.EVIL_GAME_CONTENTS)
-        self.assertEquals(parsed_game['decks'][0]['order'], 2)
-        self.assertEquals(parsed_game['decks'][1]['order'], 1)
+    def test_possesion_minigame(self):
+        game_contents = u"""<html><head><link rel="stylesheet" href="/dom/client.css"><title>Dominion Game #888</title></head><body><pre>Leeko wins!
+<span class=card-none>Bazaars</span>, <span class=card-none>Laboratories</span>, and <span class=card-curse>Curses</span> are all gone.
+ 
+cards in supply: <span class=card-none>Bazaar</span>, <span class=card-none>Cutpurse</span>, <span class=card-none>Familiar</span>, <span class=card-victory>Gardens</span>, <span class=card-none>Laboratory</span>, <span class=card-none>Library</span>, <span class=card-none>Mint</span>, <span class=card-none>Possession</span>, <span class=card-treasure>Potion</span>, <span class=card-none>University</span>, and <span class=card-reaction>Watchtower</span> 
+
+----------------------
+
+<b>Leeko: 4 points</b> (a <span class=card-victory>Province</span>, 3 <span class=card-victory>Estates</span>, and 5 <span class=card-curse>Curses</span>); 17 turns
+       opening: <span class=card-treasure>Silver</span> / <span class=card-treasure>Potion</span> 
+       [40 cards] 9 <span class=card-none>Laboratories</span>, 7 <span class=card-none>Bazaars</span>, 5 <span class=card-none>Universities</span>, 2 <span class=card-none>Familiars</span>, 1 <span class=card-none>Cutpurse</span>, 1 <span class=card-none>Mint</span>, 1 <span class=card-reaction>Watchtower</span>, 2 <span class=card-treasure>Coppers</span>, 1 <span class=card-treasure>Silver</span>, 2 <span class=card-treasure>Potions</span>, 3 <span class=card-victory>Estates</span>, 1 <span class=card-victory>Province</span>, 5 <span class=card-curse>Curses</span> 
+
+<b>michiel: 0 points</b> (3 <span class=card-victory>Estates</span> and 3 <span class=card-curse>Curses</span>); 16 turns
+         opening: <span class=card-treasure>Potion</span> / <span class=card-reaction>Watchtower</span> 
+         [28 cards] 3 <span class=card-none>Bazaars</span>, 3 <span class=card-none>Familiars</span>, 3 <span class=card-reaction>Watchtowers</span>, 2 <span class=card-none>Mints</span>, 1 <span class=card-none>Cutpurse</span>, 1 <span class=card-none>Laboratory</span>, 1 <span class=card-none>Possession</span>, 4 <span class=card-treasure>Coppers</span>, 1 <span class=card-treasure>Silver</span>, 2 <span class=card-treasure>Potions</span>, 1 <span class=card-treasure>Gold</span>, 3 <span class=card-victory>Estates</span>, 3 <span class=card-curse>Curses</span> 
+
+----------------------
+trash: 8 <span class=card-treasure>Coppers</span>, a <span class=card-treasure>Silver</span>, and 2 <span class=card-curse>Curses</span> 
+league game: no
+ 
+<hr/><b>Game log</b> 
+ 
+Turn order is Leeko and then michiel.
+<span class=logonly>(Leeko's first hand: 2 <span class=card-victory>Estates</span> and 3 <span class=card-treasure>Coppers</span>.)</span> 
+<span class=logonly>(michiel's first hand: an <span class=card-victory>Estate</span> and 4 <span class=card-treasure>Coppers</span>.)</span> 
+ 
+--- Leeko's turn 1 ---
+Leeko plays 3 <span class=card-treasure>Coppers</span>.
+Leeko buys a <span class=card-treasure>Silver</span>.
+<span class=logonly>(Leeko draws: an <span class=card-victory>Estate</span> and 4 <span class=card-treasure>Coppers</span>.)</span> 
+ 
+   --- michiel's turn 1 ---
+   michiel plays 4 <span class=card-treasure>Coppers</span>.
+   michiel buys a <span class=card-treasure>Potion</span>.
+   <span class=logonly>(michiel draws: 2 <span class=card-victory>Estates</span> and 3 <span class=card-treasure>Coppers</span>.)</span> 
+
+   --- michiel's turn 15 ---
+   michiel plays a <span class=card-none>Laboratory</span>.
+   ... drawing 2 cards and getting +1 action.
+   michiel plays a <span class=card-none>Possession</span>.
+   <span class=logonly>(michiel draws: a <span class=card-reaction>Watchtower</span>, a <span class=card-treasure>Potion</span>, a <span class=card-none>Familiar</span>, a <span class=card-treasure>Gold</span>, and a <span class=card-curse>Curse</span>.)</span> 
+
+--- Leeko's turn (possessed by michiel) ---
+Leeko plays a <span class=card-none>University</span>.
+... gaining a <span class=card-none>Mint</span>.
+... ... michiel gains the <span class=card-none>Mint</span>.
+Leeko plays a <span class=card-none>University</span>.
+... gaining a <span class=card-none>Bazaar</span>.
+... ... michiel gains the <span class=card-none>Bazaar</span>.
+Leeko plays 2 <span class=card-treasure>Coppers</span>.
+(Leeko reshuffles.)
+<span class=logonly>(Leeko draws: a <span class=card-none>University</span>, a <span class=card-none>Mint</span>, a <span class=card-none>Bazaar</span>, and 2 <span class=card-curse>Curses</span>.)</span>  
+
+<span class=card-none>Bazaars</span>, <span class=card-none>Laboratories</span>, and <span class=card-curse>Curses</span> are all gone.
+Leeko wins!
+</pre></body></html> """
+        parsed_game = parse_game.parse_game(game_contents)
+        leeko_deck = parsed_game['decks'][0]
+        self.assertEquals(leeko_deck['name'], 'Leeko')
+        michiel_deck = parsed_game['decks'][1]
+        self.assertEquals(michiel_deck['name'], 'michiel')
+        self.assertEquals(len(leeko_deck['turns']), 1)
+        self.assertEquals(len(michiel_deck['turns']), 3)
+        self.assertTrue(michiel_deck['turns'][2]['poss'])
+        # pprint.pprint(parsed_game)
 
 
 if __name__ == '__main__':
