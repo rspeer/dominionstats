@@ -51,6 +51,11 @@ class CaptureCardsTest(unittest.TestCase):
             'player4 buys an <span class=card-none>Expand</span>')
         self.assertEquals(captured, ['Expand'])
 
+    def test_bane(self):
+        captured = parse_game.capture_cards(
+            '<span cardname="Chapel" class=card-none>Chapel</span>, <span cardname="Moat" class=card-reaction>Moat</span><span class=bane-star>&diams;</span>,')
+        self.assertEquals(captured, ['Chapel', 'Moat'])
+
 class DeleteKeysTest(unittest.TestCase):
     def test_delete_keys_with_empty_vals(self):
         d1 = {'p6': {}}

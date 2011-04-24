@@ -126,7 +126,7 @@ class Game:
         # pprint.pprint(game_dict)
 
         self.player_decks = [PlayerDeck(pd, self) for pd in game_dict['decks']]
-        self.id = game_dict.get('_id', 'unidentified')
+        self.id = game_dict.get('_id', '')
 
         for raw_pd, pd in zip(game_dict['decks'], self.player_decks):
             turn_ct = 0

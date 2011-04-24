@@ -9,6 +9,7 @@ import os
 import multiprocessing
 import pprint
 import re
+import sys
 
 import card_info
 import game
@@ -103,6 +104,8 @@ def capture_cards(line):
                 continue
             maybe_plural = subsect[end_of_begin_span + 1: 
                                    start_of_end_span]
+            if maybe_plural == '&diams;':
+                continue
             try:
                 card = card_info.SingularOf(maybe_plural)
             except KeyError, exception:
@@ -445,7 +448,7 @@ class ParseTurnHeaderError(Exception):
     def __init__(self, line):
         self.line = line
 
-def parse_turn_header(turn_header_line, names_list):
+def parse_turn_header(turn_header_line, names_list = None):
     """ Given a turn header line return a dictionary containing 
     information about the turn.  All turns have a player name in the key 
     'name'.
@@ -459,6 +462,8 @@ def parse_turn_header(turn_header_line, names_list):
     # have some code to match against the three different cases.
 
     def _get_name(match, name_key = 'name'):
+        if names_list is None:
+            return match.group(name_key)
         return _get_real_name(match.group(name_key), names_list)
 
     parsed_header = {}
@@ -635,10 +640,9 @@ def split_turns(turns_blob):
     """ Given a string of game play data, return a list of turn strings
     separated by turn headers."""
     turn_texts = ['']
-    fake_names = collections.defaultdict(str)
     for line in turns_blob.split('\n'):
         try:
-            parse_turn_header(line, fake_names)
+            parse_turn_header(line)
             turn_texts.append(line + '\n')
         except ParseTurnHeaderError, e:
             turn_texts[-1] += line + '\n'
@@ -719,7 +723,7 @@ def track_brokenness(parsed_games):
     wrongness = collections.defaultdict(int)
     overall = collections.defaultdict(int)
     for raw_game in parsed_games:
-        accurately_parsed = check_game_sanity(game.Game(raw_game))
+        accurately_parsed = check_game_sanity(game.Game(raw_game), sys.stdout)
         #if not accurately_parsed:
         #    print raw_game['_id']
         for card in raw_game['supply']:
@@ -741,7 +745,7 @@ def parse_game_from_file(filename):
     contents = codecs.open(filename, 'r', encoding='utf-8').read()
     return parse_game(contents, dubious_check = True)
 
-def check_game_sanity(game_val):
+def check_game_sanity(game_val, output):
     """ Check if if game_val is self consistent. 
 
     In particular, check that the end game player decks match the result of 
@@ -770,14 +774,16 @@ def check_game_sanity(game_val):
                             computed_deck_comp.keys()):
                 if parsed_deck_comp.get(card, 0) != computed_deck_comp.get(
                     card, 0):
-
-                    print card, parsed_deck_comp.get(card, 0), \
-                        computed_deck_comp.get(card, 0)
+                    if not found_something_wrong:
+                        output.write('card from-data from-sim\n')
+                    output.write('%s %d %d\n' % (
+                            card, parsed_deck_comp.get(card, 0), 
+                                computed_deck_comp.get(card, 0)))
                     found_something_wrong = True
             if found_something_wrong:
-                print player_deck.Name(), game_val.Id()
-                print ' '.join(game_val.Supply())
-                print
+                output.write('%s %s\n' % (player_deck.Name(), game_val.Id()))
+                output.write(' '.join(game_val.Supply()))
+                output.write('\n')
                 return False
     return True
 
@@ -805,7 +811,7 @@ def _pretty_format_html(v):
     return '<br>' + pprint.pformat(v).replace(
         '\n', '<br>').replace(' ', '&nbsp')
 
-def annotate_game(contents, debug=False):
+def annotate_game(contents, game_id, debug=False):
     """ Decorate game contents with some JS that makes a score keeper 
     and provides anchors per turn."""
     parsed_game = parse_game(contents, dubious_check = False)
@@ -843,46 +849,64 @@ def annotate_game(contents, debug=False):
                 turn.turn_dict.get('poss', False),
                 turn.Player().Name())
 
+    import cStringIO as StringIO
+    output_buf = StringIO.StringIO()
+    if not check_game_sanity(game_val, output_buf):
+        ret += 'Parsing error, data mismatch, '
+        ret += '''<a href="game?game_id=%s&debug=1">be a hero, find the 
+bug</a> and tell rrenaud@gmail.com<br>''' % game_id
+        ret += output_buf.getvalue().replace('\n', '<br>\n')
+
     cur_turn_ind = 0
     
-    while True:
-        cur_match = TURN_HEADER_RE.search(contents)
-        poss_num = 0
-        if cur_match:
-            ret += contents[:cur_match.start()]
-            player = cur_match.group('name')
-            if cur_match.group('turn_no'):
-                turn_no = int(cur_match.group('turn_no')) - 1
-                # these turn id's are 0 indexed
-                turn_id = '%s-turn-%d' % (player, turn_no)
-                # and since these are shown, they are 1 indexed
-                show_turn_id = '%s-show-turn-%d' % (player, turn_no + 1)
-                poss_num = 0
-            else:
-                turn_id = '%s-poss-turn-%d-%d' % (player, turn_no,
-                                                  poss_num)
-                show_turn_id = '%s-show-poss-turn-%d-%d' % (
-                    player, turn_no + 1, poss_num + 1)
-                poss_num += 1
-            ret += '<div id="%s"></div>' % turn_id
-            ret += '<a name="%s"></a><a href="#%s">%s</a>' % (
-                show_turn_id, show_turn_id, contents[
-                    cur_match.start():cur_match.end()])
+    split_turn_chunks = split_turns(contents)
+    poss_num = 0
+    ret += split_turn_chunks[0]
+    split_turn_chunks.pop(0)
 
-            contents = contents[cur_match.end():]
-            if debug:
-                ret += '<br>' + repr(game_val.Turns()[cur_turn_ind]).replace(
-                    '\n', '<br>')
-                                                     
-            cur_turn_ind += 1
+    for idx, turn_chunk in enumerate(split_turn_chunks):
+        split_chunk = turn_chunk.split('\n')
+        parsed_header = parse_turn_header(split_chunk[0])
+
+        player = parsed_header['name']
+        if 'turn_no' in parsed_header:
+            turn_no = parsed_header['turn_no'] - 1
+            # these turn id's are 0 indexed
+            turn_id = '%s-turn-%d' % (player, turn_no)
+            # and since these are shown, they are 1 indexed
+            show_turn_id = '%s-show-turn-%d' % (player, turn_no + 1)
+            poss_num = 0
+        elif 'pname' in parsed_header:
+            turn_id = '%s-poss-turn-%d-%d' % (player, turn_no,
+                                              poss_num)
+            show_turn_id = '%s-show-poss-turn-%d-%d' % (
+                player, turn_no + 1, poss_num + 1)
+            poss_num += 1
         else:
-            break
-    before_end = contents.find('</html')
-    ret = ret + contents[:before_end]
-    ret += '<div id="end-game">\n'
-    ret += '</div>&nbsp<br>\n' * 10  
-    contents = contents[before_end:]
-    return ret + contents
+            assert 'outpost' in parsed_header, str(parsed_header)
+            turn_id = '%s-outpost-turn-%d' % (player, turn_no)
+            show_turn_id = '%s-show-outpost-turn-%d' % (
+                player, turn_no + 1)
+            poss_num = 0
+
+        ret += '<div id="%s"></div>' % turn_id
+        ret += '<a name="%s"></a><a href="#%s">%s</a>' % (
+            show_turn_id, show_turn_id, split_chunk[0])
+
+        if debug:
+            ret += '<br>' + repr(game_val.Turns()[cur_turn_ind]).replace(
+                '\n', '<br>')
+        cur_turn_ind += 1
+
+        if idx != len(split_turn_chunks) - 1:
+            ret += turn_chunk[turn_chunk.find('\n'):]
+        else:            
+            before_end = turn_chunk.find('</html')
+            ret += turn_chunk[turn_chunk.find('\n'): before_end]
+            ret += '<div id="end-game">\n'
+            ret += '</div>&nbsp<br>\n' * 10  
+            ret += '</html>'
+    return ret
     
 # def profilemain():
 #     import hotshot, hotshot.stats
