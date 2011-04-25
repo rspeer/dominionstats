@@ -90,6 +90,8 @@ def accum_buy_stats(games_stream, accum_stats,
             #    accum_stats[card].none_gained.AddOutcome(win_points)
 
             all_avail = supply_cards.union(any_gained)
+            if 'Tournament' in all_avail:
+                all_avail = all_avail.union(card_info.TOURNAMENT_WINNINGS)
             for card in all_avail:
                 accum_stats[card].available.AddOutcome(win_points)
 
@@ -158,8 +160,7 @@ def main():
     games = con.test.games
     output_db = con.test
 
-    parser = utils.incremental_parser()
-    parser.add_argument('--max_games', default=-1, type=int)
+    parser = utils.incremental_max_parser()
     args = parser.parse_args()
 
     overall_stats = DeckBuyStats()

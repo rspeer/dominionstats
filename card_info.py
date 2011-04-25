@@ -69,6 +69,8 @@ def NumCopiesPerGame(card_name, num_players):
             'Copper': 60
             }.get(card_name, 10)
 
+TOURNAMENT_WINNINGS = ['Princess', 'Diadem', 'Followers', 
+                       'Trusty Steed', 'Bag of Gold']
 
 EVERY_SET_CARDS = ['Estate', 'Duchy', 'Province',
                    'Copper', 'Silver', 'Gold', 'Curse']
