@@ -8,8 +8,8 @@ import sys
 utils.ensure_exists('static/status')
 
 cmds = [
-    ('python scrape.py', False),             # downloads gamelogs from isotropic
-    ('python parse_game.py', True),        # parses data into useable format
+    #('python scrape.py', False),             # downloads gamelogs from isotropic
+    #('python parse_game.py', True),        # parses data into useable format
     ('python load_parsed_data.py', False),  # loads data into database
     ('python analyze.py', False),            # produces data for graphs
     ('python goals.py', False),
