@@ -310,23 +310,36 @@ def SetParameters(beta=None, epsilon=None, draw_probability=None,
 
 SetParameters()
 
-def get_db_entry(player_name, collection):
-    entry = collection.find_one({'name': player_name})
+def get_db_entry(player_info, collection):
+    if isinstance(player_info, dict):
+        # pre-computed skill
+        if 'gamma' not in player_info:
+            player_info['gamma'] = GAMMA
+        return player_info
+    entry = collection.find_one({'name': player_info})
     if entry is None:
-        entry = {'mu': INITIAL_MU, 'sigma': INITIAL_SIGMA}
+        if player_info.startswith('open:'):
+            entry = {'mu': 0.0, 'sigma': INITIAL_SIGMA, 'gamma': 0.0001}
+        else:
+            entry = {'mu': INITIAL_MU, 'sigma': INITIAL_SIGMA, 'gamma': GAMMA}
     return entry
 
-def get_skill(player_name, collection):
-    return get_db_entry(player_name, collection)['mu']
+def get_skill(player_info, collection):
+    return get_db_entry(player_info, collection)['mu']
 
-def get_stdev(player_name, collection):
-    return get_db_entry(player_name, collection)['sigma']
+def get_stdev(player_info, collection):
+    return get_db_entry(player_info, collection)['sigma']
 
-def set_db_entry(player_name, mu, sigma, collection):
+def get_gamma(player_info, collection):
+    return get_db_entry(player_info, collection)['gamma']
+
+def set_db_entry(player_name, mu, sigma, gamma, collection):
+    if isinstance(player_name, dict):
+        player_name = player_name['name']
     floor = mu - 3*sigma
     ceil = mu + 3*sigma
     collection.update({'name': player_name},
-                      {'$set': {'mu': mu, 'sigma': sigma,
+                      {'$set': {'mu': mu, 'sigma': sigma, 'gamma': gamma,
                                 'ceil': ceil, 'floor': floor}},
                       upsert=True)
 
@@ -348,7 +361,8 @@ def db_update_trueskill(team_results, collection):
   # Create each layer of factor nodes.  At the top we have priors
   # initialized to the player's current skill estimate.
   skill = [PriorFactor(s, Gaussian(mu=get_skill(pl, collection),
-                                   sigma=get_stdev(pl, collection) + GAMMA))
+                                   sigma=get_stdev(pl, collection) +
+                                         get_gamma(pl, collection)))
            for (s, pl) in zip(ss, players)]
   skill_to_perf = [LikelihoodFactor(s, p, BETA**2)
                    for (s, p) in zip(ss, ps)]
@@ -415,8 +429,9 @@ def db_update_trueskill(team_results, collection):
 
   for s, pl in zip(ss, players):
     mu, sigma = s.value.MuSigma()
-    set_db_entry(pl, mu, sigma, collection)
-    if sigma*3 < 20:
+    gamma = get_gamma(pl, collection)
+    set_db_entry(pl, mu, sigma, gamma, collection)
+    if isinstance(pl, basestring) and (mu - sigma*3) > 0 or (mu + sigma*3) < 0:
         print('%30s : %4.2f +- %4.2f' % (pl, mu, sigma*3))
 
 def AdjustPlayers(players):

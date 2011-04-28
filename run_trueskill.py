@@ -3,7 +3,7 @@ con = get_mongo_connection()
 DB = con.test
 games = DB.games
 
-from trueskill.trueskill import db_update_trueskill
+from trueskill.trueskill import db_update_trueskill, get_skill, get_stdev
 
 def results_to_ranks(results):
     sorted_results = sorted(results)
@@ -34,6 +34,12 @@ def run_trueskill_players():
 
 def run_trueskill_openings():
     collection = DB.trueskill_openings
+    player_collection = DB.trueskill_players
+    player_collection.remove()
+    player_collection.ensure_index('name')
+    player_collection.ensure_index('mu')
+    player_collection.ensure_index('floor')
+    player_collection.ensure_index('ceil')
     collection.remove()
     collection.ensure_index('name')
     collection.ensure_index('mu')
@@ -50,16 +56,7 @@ def run_trueskill_openings():
                           deck['turns'][1].get('buys', [])
                 opening.sort()
                 open_name = 'open:'+ ('+'.join(opening))
-                i = 2
-                while open_name in openings:
-                    # a cheap way to uniquify opening names.
-                    # Silver+Silver2 means you are the second player to
-                    # open Silver+Silver this game. *shrug*
-                    if i == 2:
-                        idx = openings.index(open_name)
-                        openings[idx] = 'open1:' + ('+'.join(opening))
-                    open_name = ('open%d:' % i) + ('+'.join(opening))
-                    i += 1
+                if open_name in openings:
                     dups = True
                 openings.append(open_name)
                 nturns = len(deck['turns'])
@@ -68,12 +65,37 @@ def run_trueskill_openings():
                 else:
                     vp = deck['points']
                 results.append((-vp, nturns))
-                teams.append([open_name])
+                player_name = deck['name']
+                player_info = {
+                    'name': player_name,
+                    'mu': get_skill(player_name, player_collection),
+                    'sigma': get_stdev(player_name, player_collection)
+                }
+
+                teams.append([open_name, player_info])
+            ranks = results_to_ranks(results)
             if not dups:
-                ranks = results_to_ranks(results)
                 team_results = [
-                    (team, [1.0], rank)
+                    (team, [0.5, 0.5], rank)
                     for team, rank in zip(teams, ranks)
                 ]
                 db_update_trueskill(team_results, collection)
+            player_results = [
+                ([team[1]], [1.0], rank)
+                for team, rank in zip(teams, ranks)
+            ]
+            db_update_trueskill(player_results, player_collection)
+
+def update_plays():
+    DB.trueskill_openings.ensure_index('cards')
+    for opening in DB.trueskill_openings.find():
+        key = opening['name']
+        cards = key[5:].split('+')
+        if cards == ['']:
+            cards = []
+        print cards
+        DB.trueskill_openings.update(
+            {'name': key},
+            {'$set': {'cards': cards}}
+        )
 

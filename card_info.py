@@ -39,6 +39,9 @@ def VPPerCard(singular_card_name):
 def IsTreasure(singular_card_name):
     return _card_info_rows[singular_card_name]['Treasure'] == '1'
 
+def Cost(singular_card_name):
+    return _card_info_rows[singular_card_name]['Cost']
+
 # Returns value of card name if the value is unambigous.
 def MoneyValue(card_name):
     try:
@@ -69,6 +72,10 @@ def NumCopiesPerGame(card_name, num_players):
 
 EVERY_SET_CARDS = ['Estate', 'Duchy', 'Province',
                    'Copper', 'Silver', 'Gold', 'Curse']
+
+OPENING_CARDS = [card for card in _card_info_rows
+                 if Cost(card) in ('0', '2', '3', '4', '5')]
+OPENING_CARDS.sort()
 
 def CardIndex(singular):
     return _card_index[singular]
