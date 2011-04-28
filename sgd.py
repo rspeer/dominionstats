@@ -1,17 +1,17 @@
 from utils import get_mongo_connection
 from game import Game, PlayerDeck
 import card_info
-from scikits.learn.linear_model import SGDClassifier
+from bolt.io import Dataset, dense2sparse
+from bolt.trainer.sgd import SGD, Log
+from bolt.model import LinearModel
 from collections import defaultdict
 import numpy as np
 
 con = get_mongo_connection()
 DB = con.test
-games = DB.games
 
-MAX_TURNS = 25
+MAX_TURNS = 40
 REQUIRED_PLAYERS = 2
-#BATCH_SIZE = 10000
 
 CARDS = sorted(card_info._card_info_rows.keys())
 CARDS_INDEX = {}
@@ -55,49 +55,40 @@ def should_learn(game):
     return (len(game.player_decks) == REQUIRED_PLAYERS and
             game.player_decks[0].win_points != 1.0)
 
-def run_sgd():
-    classifiers = [
-      SGDClassifier(loss='log', fit_intercept=0, n_iter=10, verbose=True)
-      for i in xrange(MAX_TURNS)
-    ]
-    training_vecs = defaultdict(list)
-    training_values = defaultdict(list)
-    iter = 0
-    out = open('card_values.txt', 'w')
-    for gamedata in games.find():
-        iter += 1
-        game = Game(gamedata)
-        if should_learn(game):
-            turn_vecs = defaultdict(zero_vector)
-            turn_counts = defaultdict(int)
-            for turn_num, deck_state, points in decks_by_turn(game):
-                vec = deck_to_vector(deck_state)
-                turn_vecs[turn_num] += vec * points
-                turn_counts[turn_num] += 1
+class IsotropicDataset(Dataset):
+    def __init__(self, which_games, turn):
+        self.games = which_games.find()[:10000]
+        self.turn = turn
+        self.n = which_games.count()
+    def __iter__(self):
+        for gamedata in self.games:
+            game = Game(gamedata)
+            if should_learn(game):
+                turn_vec = zero_vector()
+                turn_count = 0
+                for turn_num, deck_state, points in decks_by_turn(game):
+                    if turn_num == self.turn:
+                        vec = deck_to_vector(deck_state)
+                        turn_count += 1
+                        turn_vec += vec * points
+                if turn_count == REQUIRED_PLAYERS:
+                    yield (dense2sparse(turn_vec), 1)
+                    yield (dense2sparse(-turn_vec), 0)
+    def shuffle(self):
+        self.games.shuffle()
 
-            for turn_num in turn_counts:
-                if turn_counts[turn_num] == REQUIRED_PLAYERS:
-                    vec = turn_vecs[turn_num]
-                    training_vecs[turn_num].extend([vec, -vec])
-                    training_values[turn_num].extend([1, 0])
-        if iter % 10000 == 0:
-            print iter
-
-    for turn_num in xrange(1, MAX_TURNS):
-        coef_init = getattr(classifiers[turn_num],
-                            'coef_',
-                            zero_vector())
-                            
-        classifiers[turn_num].fit(training_vecs[turn_num],
-                                  training_values[turn_num],
-                                  coef_init = coef_init)
-
-    for card_num in xrange(NCARDS):
-        card = CARDS[card_num]
-        weights = [str(classifiers[i].coef_[card_num]) for i in xrange(2, MAX_TURNS)]
-        row = [card]+weights
-        print >> out, ','.join(row)
-        print ','.join(row)
+def run_sgd(turn):
+    classifier = SGD(loss=Log(), reg=0.0001, epochs=1)
+    data = IsotropicDataset(DB.games, turn)
+    model = LinearModel(NCARDS)
+    classifier.train(model, data, verbose=1, shuffle=False)
+    results = zip(model.w, CARDS)
+    out = open('static/output/card-values-%d.txt' % turn, 'w')
+    print >> out, results
+    results.sort()
+    for value, card in results:
+        print "%20s\t% 4.4f" % (card, value)
+    out.close()
 
 if __name__ == '__main__':
-    run_sgd()
+    run_sgd(25)
