@@ -302,6 +302,7 @@ class GamePage:
     def GET(self):
         web.header("Content-Type", "text/html; charset=utf-8")  
         query_dict = dict(urlparse.parse_qsl(web.ctx.env['QUERY_STRING']))
+        debug = int(query_dict.get('debug', 0))
         game_id = query_dict['game_id']
         yyyymmdd = game.Game.DateFromId(game_id)
         contents = codecs.open('static/scrape_data/%s/%s' % (
@@ -309,7 +310,7 @@ class GamePage:
         body_err_msg = ('<body><b>Error annotating game, tell ' 
                         'rrenaud@gmail.com!</b>')
         try:
-            return parse_game.annotate_game(contents)
+            return parse_game.annotate_game(contents, game_id, debug)
         except parse_game.BogusGame, b:
             return contents.replace('<body>', body_err_msg + ': foo? ' + 
                                     str(b))

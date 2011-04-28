@@ -101,9 +101,9 @@ function RenderGameState(turn_ind) {
     var state = game.game_states[turn_ind];
     var rendered = RenderCardFreqs(state.supply);
     var t = {};
-    
+
     if (turn_ind < turns_in_order.length) {
-	t = turns_in_order[turn_ind];	
+	t = turns_in_order[turn_ind];
 	rendered += 'turn ' + (t.number + 1) + '<br>\n';
     } else {
 	rendered += 'Game end<br>\n';
@@ -128,6 +128,7 @@ function UpdateDisplay() {
 	var turn = turns_in_order[i];
 	var elem_name = turn.name + '-turn-' + turn.number;
 	var elem = $('#' + elem_name);
+	// Might want to update this to handle possesion
 	if (elem && IsScrolledIntoView(elem, game_display_height)) {
 	    max_active = i;
 	}

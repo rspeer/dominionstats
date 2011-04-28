@@ -1,0 +1,261 @@
+a#leaguelink { margin-left: 3ex; font-size: x-small }
+table#player_table { border: none }
+table#player_table td { vertical-align: top; text-align: left; padding-top: 6px }
+.player_td { width: 350px; overflow: hidden }
+.pstat { padding-left: 0.8em; color: #69c }
+.pstat b { color: #369 }
+.mystat { color: #396 }
+.mystat b { color: #063 }
+
+.hright { text-align: right; }
+.hleft { text-align: left; }
+.hcenter { text-align: center; }
+.hrightfixed1 { text-align: right; width: 6em; }
+.hrightfixed2 { text-align: right; width: 8em; }
+.hleftfixed { text-align: left; width:4em; }
+
+div.vertical { display: inline-block; margin-left: 3px; margin-right: 3px; vertical-align: middle; text-align: center; min-width: 3em }
+div.buttons { float: right; }
+
+#game { display: none }
+
+#game .supply { position: fixed; left: 0px; width: 350px; bottom: 0px;
+		height: 100%; margin: 0; }
+
+#game .supply table { padding-bottom: 5px; position: fixed; bottom: 0px }
+
+#game .right { margin-left: 350px; }
+
+img#sound_toggle { vertical-align: middle; margin: 0px 10px; }
+#choices { margin: 10px 0px; }
+
+input#entry { width: 350px; }
+
+hr.cardgroup { margin: 2ex 4ex 1ex 4ex; visibility: hidden; }
+.costcell { display: inline-block; margin-top: 4px; vertical-align: middle; margin-right: 8px; min-width: 5ex; }
+.costcell b { font-weight: bold; font-size: large; }
+
+div.ttcard { width: 33ex;
+	     display: block;
+	     border-top: 1px solid #999;
+	     border-left: 1px solid #999;
+	     border-bottom: 2px solid #333;
+	     border-right: 2px solid #333;
+	     background: white;
+             vertical-align: top;
+	     padding-bottom: 3ex;
+	     text-align: center;
+	   }
+div.ttimage { clear: both; width: 33ex; padding: 0; margin: 0 }
+
+.icard { width: 33ex; height: 44ex; display: inline-block; border: 1px solid #ccc;
+         vertical-align: top;
+	 margin: 1ex;
+	 position: relative;
+       }
+.ititle { float: left; font-weight: bold; margin: 1ex 1ex 2ex 1ex; }
+.itext p.t { font-size: smaller; color: #222; }
+.itext p { margin: 1em 1ex; clear: both; }
+.itext .c { text-align: center; }
+.itext .c .xl { font-size: xx-large; }
+.itext hr { margin: 2px 3ex; }
+.icost { float: right; margin: 1ex 1ex 2ex 1ex; }
+.itype { text-align: center; width: 100%; font-weight: bold;
+	 position: absolute; bottom: 0; margin: 1ex 0; }
+
+a.imcard { display: inline-block; text-align: center; vertical-align: bottom; margin: 5px 8px; }
+img.smallcard { vertical-align: middle; margin: 0; }
+.imcard hr { height: 0px; visible: hidden; border: none; }
+.imprice { }
+
+div.cardname { display: inline-block; vertical-align: middle }
+td.basic-column .imavail { margin-left: 3px; }
+.imavail { color: #69c; font-size: 84% }
+.imbasic { margin: 0 0 8px 0; width: 59px; }
+span.extra { margin-right: 3px; }
+td.basic-column { text-align: center; vertical-align: top; width: 59px; padding-left: 5px; }
+td.kingdom-column { vertical-align: top; width: 260px; text-align: right; white-space: nowrap; display: block; }
+td.basic-column div.hr { background-color: #ccc; height: 1px; margin: 10px 10px; }
+td.kingdom-column div.supplycard { margin: 4px 0px; }
+td.kingdom-column div.nonsupplycard { margin: 4px 0px; }
+.nonsupplycard .cardname { font-style: oblique; color: #666 }
+td.kingdom-column div.hr { background-color: #ccc; height: 1px; margin: 2px 30px 2px; }
+
+.gone { text-decoration: line-through }
+
+div.cont { display: inline-block; text-align: left }
+div.cont img { padding: 0; margin: 0; border: none; vertical-align: top; }
+
+select { color: green; }
+.card { padding-left: 3ex }
+
+.card-unknown { background-color: #888; padding: 0 0.5ex }
+.card-none { background-color: #f0f0f0; padding: 0 0.5ex }
+.card-treasure { background-color: #fde164; padding: 0 0.5ex }
+.card-curse { background-color: #d78adb; padding: 0 0.5ex }
+.card-victory { background-color: #92c17d; padding: 0 0.5ex }
+.card-reaction { background-color: #40a8e3; padding: 0 0.5ex }
+.card-duration { background-color: #fe8f4e; padding: 0 0.5ex }
+.card-victory-action { background-image:url('/static/white-green.png'); padding: 0 0.5ex }
+.card-victory-treasure { background-image:url('/static/yellow-green.png'); padding: 0 0.5ex }
+
+.embargo-star { margin-left: 0.5ex; background-color: #d78adb; padding: 0 0.5ex }
+.trade-route-star { margin-left: 0.5ex; background-color: #fde164; padding: 0 0.5ex }
+.attack { color: red; }
+.order { margin-left: 1ex; width: 3; display: inline-block; color: red }
+.possessed { color: #c09; font-style: italic }
+#temp_say { color: #36f; font-style: italic }
+.em { font-weight: bold; color: #c00; font-size: 150% }
+.gameover { padding: 3em; }
+.confirm { font-weight: bold; color: #c00 }
+.price { text-align: right; padding-right: 1ex }
+
+.card-unknown-drag { background-color: #888; padding: 0 0.5ex; opacity: 0.7 }
+.card-treasure-drag { background-color: #fde164; padding: 0 0.5ex; opacity: 0.7 }
+
+span.discards { background-color: #888; padding: 0; margin: 0; }
+span.stash-discards { background-color: #fde164; padding: 0; margin: 0; }
+div.card { background-color: #888; padding: 0; margin: 0 2px 0 0; display: inline-block; height: 1em; width: 2px; }
+div.stash { background-color: #fde164; padding: 0; margin: 0 2px 0 0; display: inline-block; height: 1em; width: 2px; }
+
+span.choiceitem { display: inline-block; }
+span.reorder { display: inline-block; }
+
+.choice { color: #00c; padding-left: 3ex; display: inline-block; }
+a { text-decoration: none }
+a.choice:hover { color: red; cursor: pointer }
+a.play:hover { color: red; cursor: pointer }
+a.buy:hover { color: red; cursor: pointer }
+a.buy { font-weight: bold }
+.morechoice { color: #333; padding-left: 3ex; display: inline-block; }
+
+.choice2 { margin-left: 1ex }
+span.disabled label { color: #999 }
+.txcardname { min-width: 23ex }
+.avail { padding-right: 3ex }
+
+div.possessed { display: none }
+div.holder { padding-top: 2em }
+
+.source { visibility: hidden }
+.pos-marker { line-height: 2em;
+	      display: inline-block;
+	      text-align: center;
+	      font-size: 200%;
+	      font-weight: bold;
+	      visibility: hidden }
+
+span.stash-card { background-color: #888; padding: 0 3px 0 0; margin: 0 3px; }
+.stash-pos-marker { line-height: 2em;
+		    display: inline-block;
+		    text-align: center;
+		    font-size: 200%;
+		    font-weight: bold;
+		    color: red;
+		    margin: -6px;
+		    vertical-align: middle;
+		    visibility: hidden;
+		  }
+
+.drag { opacity: .6 }
+
+.important { font-size: 150% }
+div.hand { line-height: 150% }
+td.hand { padding-top: 8px; }
+
+pre#chat { height: 7em; overflow: auto }
+pre#chat .name { color: #999 }
+
+div.black { height: 100%;
+	    width: 100%;
+	    left: 0px;
+	    top: 0px;
+	    position: fixed;
+	    }
+
+pre { white-space: pre-wrap; word-wrap: break-word; }
+
+pre.info { border: 1px solid black;
+	   background-color: white;
+	   opacity: 1.0;
+	   margin: auto;
+	   padding: 2em 2em 0 2em;
+	   position: fixed;
+
+	   width: 80%;
+	   text-align: center;
+	   height: 80%;
+	   overflow: auto;
+	   left: 0;
+	   right: 0;
+	   bottom: 0;
+	   top: 0;
+	   }
+
+pre.infobm { max-width: 115ex;
+	     max-height: 60ex; }
+
+pre.infoinfo { text-align: left; }
+
+pre.info h1 { font-size: 150%; padding: 0; margin: 0; }
+pre.info td.r { text-align: right; padding-right: 2ex; vertical-align: top; }
+
+.dismiss { text-align: center; font-style: italic; color: #999 }
+
+img.info-button { padding-left: 0.5em;
+		  padding-right: 1em;
+		  padding-top: 3px;
+		  margin: auto 0;
+		}
+
+img:hover { cursor: pointer }
+
+table, tr, tbody, td { border: none }
+div, span, select, html, body, pre { font-family: sans-serif; font-size: 13px; }
+body { cursor: default; padding: 5px; }
+
+table.constr {
+    margin-top: 3ex;
+    margin-left: 3ex;
+    padding: 1ex;
+    border: 1px solid #999;
+    }
+table.constr input {
+    margin-right: 2ex;
+    }
+
+div.fail {
+    height: 100%;
+    width: 100%;
+    opacity: 0.8;
+    left: 0px;
+    top: 0px;
+    position: fixed;
+    background-color: black;
+    color: #c00;
+    font-size: xx-large;
+    text-align: center;
+    padding: 10% 0;
+}
+
+.nulla { color: blue; padding-left: 3ex; font-size: 84% }
+.nulla:hover { color: red; cursor: pointer }
+
+.logonly { font-style: italic }
+.announce { color: #c00; font-weight: bold }
+.activity { color: #999 }
+
+span.marker { display: inline-block; width: 5ex; padding-right: 3px;
+	      text-align: right; color: #c00; }
+span.imarker { color: #c00; }
+span.rank { font-size: 84%; font-weight: bold; }
+table.info { border: none; border-collapse: collapse; }
+table.info td { padding-right: 3em; }
+table.info th { padding-right: 3em; background-color: #eee; }
+#motd { color: #c00; font-weight: bold; padding: 0 1ex 1ex 1ex; }
+
+table.listing th { padding: 2px 5ex; }
+table.listing td.r { text-align: right; padding: 0 }
+
+table.listgame th { font-weight: normal; padding: 0 1ex; }
+table.listgame td.c { text-align: center; }

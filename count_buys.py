@@ -90,6 +90,8 @@ def accum_buy_stats(games_stream, accum_stats,
             #    accum_stats[card].none_gained.AddOutcome(win_points)
 
             all_avail = supply_cards.union(any_gained)
+            if 'Tournament' in all_avail:
+                all_avail = all_avail.union(card_info.TOURNAMENT_WINNINGS)
             for card in all_avail:
                 accum_stats[card].available.AddOutcome(win_points)
 
@@ -111,15 +113,18 @@ def add_effectiveness(accum_stats, global_stats):
     don't gain the card.
     """
     # first, find the incremental effect of the player's skill
-    any_eff = accum_stats['Estate'].available.meanDiff(global_stats['Estate'].available)
+    any_eff = accum_stats['Estate'].available.meanDiff(
+        global_stats['Estate'].available)
 
     for card in accum_stats:
         # now compare games in which the player gains/skips the card to gains
         # in which other players gain/skip the card
         stats_obj = accum_stats[card]
         global_stats_obj = global_stats[card]
-        card_gain_eff = stats_obj.any_gained.meanDiff(global_stats_obj.any_gained)
-        card_skip_eff = stats_obj.none_gained.meanDiff(global_stats_obj.none_gained)
+        card_gain_eff = stats_obj.any_gained.meanDiff(
+            global_stats_obj.any_gained)
+        card_skip_eff = stats_obj.none_gained.meanDiff(
+            global_stats_obj.none_gained)
         stats_obj.effectiveness_gain = card_gain_eff.meanDiff(any_eff)
         stats_obj.effectiveness_skip = card_skip_eff.meanDiff(any_eff)
 
@@ -155,8 +160,7 @@ def main():
     games = con.test.games
     output_db = con.test
 
-    parser = utils.incremental_parser()
-    parser.add_argument('--max_games', default=-1, type=int)
+    parser = utils.incremental_max_parser()
     args = parser.parse_args()
 
     overall_stats = DeckBuyStats()

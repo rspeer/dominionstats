@@ -1,3 +1,5 @@
+import urllib
+
 import pymongo
 
 import card_info
@@ -148,7 +150,11 @@ class QueryMatcher:
         if 'p2_name' in args:
             self._AddName(args['p2_name'])
         if 'kingdom' in args:
-            self.kingdom_restrict = [k.title().strip()
+
+            def sane_title(card):
+                return card.title().replace("'S", "'s")
+
+            self.kingdom_restrict = [sane_title(k).strip()
                                      for k in args['kingdom'].split(',')]
 
         self.db_query = {}
