@@ -1,6 +1,6 @@
 import pymongo
 from collections import defaultdict
-
+#module-level things like this can break
 c = pymongo.Connection()
 games = c.test.games
 
@@ -146,6 +146,7 @@ def _relative_rate(combo, rates):
                        rates[(combo[1],)] * rates[(combo[0], combo[2])],
                        rates[(combo[2],)] * rates[(combo[0], combo[1])]
                       )
+    #FIXME: this falls through if not 1/2/3
     return rates[combo] / expected
 
 if __name__ == '__main__':
