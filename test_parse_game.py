@@ -840,8 +840,8 @@ class ParseDeckTest(unittest.TestCase):
 class AssignWinPointsTest(unittest.TestCase):
     def test_assign_win_points_simple(self):
         g = {'decks': [
-                {'points': 2, 'turns': [None, None]},
-                {'points': 1, 'turns': [None, None]}
+                {'points': 2, 'turns': [{}, {}]},
+                {'points': 1, 'turns': [{}, {}]}
                 ]}
         parse_game.assign_win_points(g)
         self.assertEquals(g['decks'][0]['win_points'], 2.0)
@@ -849,8 +849,8 @@ class AssignWinPointsTest(unittest.TestCase):
 
     def test_assign_win_points_break_ties_by_turns(self):
         g = {'decks': [
-                {'points': 2, 'turns': [None, None]},
-                {'points': 2, 'turns': [None]}
+                {'points': 2, 'turns': [{}, {}]},
+                {'points': 2, 'turns': [{}]}
                 ]}
         parse_game.assign_win_points(g)
         self.assertEquals(g['decks'][0]['win_points'], 0.0)
@@ -858,8 +858,8 @@ class AssignWinPointsTest(unittest.TestCase):
         
     def test_tie(self):
         g = {'decks': [
-                {'points': 2, 'turns': [None, None]},
-                {'points': 2, 'turns': [None, None]}
+                {'points': 2, 'turns': [{}, {}]},
+                {'points': 2, 'turns': [{}, {}]}
                 ]}
         parse_game.assign_win_points(g)        
         self.assertEquals(g['decks'][0]['win_points'], 1.0)
@@ -867,13 +867,29 @@ class AssignWinPointsTest(unittest.TestCase):
 
     def test_partial_tie(self):
         g = {'decks': [
-                {'points': 2, 'turns': [None, None]},
-                {'points': 2, 'turns': [None, None]},
-                {'points': 1, 'turns': [None, None]}
+                {'points': 2, 'turns': [{}, {}]},
+                {'points': 2, 'turns': [{}, {}]},
+                {'points': 1, 'turns': [{}, {}]}
                 ]}
         parse_game.assign_win_points(g)        
         self.assertEquals(g['decks'][0]['win_points'], 1.5)
         self.assertEquals(g['decks'][1]['win_points'], 1.5)
+
+    def test_outpost_turn(self):
+        g = {'decks': [
+                {'points': 2, 'turns': [{}, {}, {'outpost': True}]},
+                {'points': 2, 'turns': [{}, {}]},
+                ]}
+        parse_game.assign_win_points(g)
+        self.assertEquals(g['decks'][0]['win_points'], 1.0)
+
+    def test_possession_turn(self):
+        g = {'decks': [
+                {'points': 2, 'turns': [{}, {}, {'poss': True}]},
+                {'points': 2, 'turns': [{}, {}]},
+                ]}
+        parse_game.assign_win_points(g)
+        self.assertEquals(g['decks'][0]['win_points'], 1.0)        
 
 class ParseGameHeaderTest(unittest.TestCase):
     def test_parse_header(self):

@@ -119,7 +119,9 @@ def assign_win_points(game_dict):
     def win_tuple(deck_dict):        
         """ Return tuple ordered by increasing final standing. """
         # negate turns so that max() behaves; points good, turns bad.
-        return (deck_dict['points'], -len(deck_dict['turns']))
+        num_normal_turns = sum(not ('poss' in t or 'outpost' in t) 
+                               for t in deck_dict['turns'])
+        return (deck_dict['points'], -num_normal_turns)
 
     decks = game_dict['decks']
     winner_tuple = max(win_tuple(p) for p in decks)
