@@ -719,7 +719,7 @@ def convert_to_json(year_month_day, games_to_parse = None):
     labelled_segments = [(i, year_month_day, c) for i, c in
                          enumerate(game_segments)]
     pool.map(dump_segment, labelled_segments)
-
+    pool.close()
 
 def track_brokenness(parsed_games):
     """Print some summary statistics about cards that cause bad parses."""
