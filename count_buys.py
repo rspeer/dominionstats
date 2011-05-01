@@ -18,7 +18,7 @@ import mergeable
 import primitive_util
 import utils
 
-NO_INFO = MVS().meanDiff(MVS())
+NO_INFO = MVS().mean_diff(MVS())
 
 class BuyStat(primitive_util.PrimitiveConversion, mergeable.MergeableObject):
     """ A bunch of MeanVar statistics about card buys/game length, etc """
@@ -30,7 +30,8 @@ class BuyStat(primitive_util.PrimitiveConversion, mergeable.MergeableObject):
         self.returns = MVS()
         self.any_gained = MVS()
         self.available = MVS()
-        self.game_length = MVS()
+        # Turn length stats are wrong, need different prior for mean var stat
+        self.game_length = MVS() 
         self.game_length_colony = MVS()
     
     @property
@@ -80,30 +81,31 @@ def accum_buy_stats(games_stream, accum_stats,
 
             for category in game.PlayerDeckChange.CATEGORIES:
                 for card in getattr(changes, category):
-                    getattr(accum_stats[card], category).AddOutcome(win_points)
+                    getattr(accum_stats[card], category).add_outcome(
+                        win_points)
                         
                     if category in ['gains', 'buys']:
                         any_gained.add(card)
 
             for card in any_gained:
-                accum_stats[card].any_gained.AddOutcome(win_points)
+                accum_stats[card].any_gained.add_outcome(win_points)
             #for card in supply_cards - any_gained:
-            #    accum_stats[card].none_gained.AddOutcome(win_points)
+            #    accum_stats[card].none_gained.add_outcome(win_points)
 
             all_avail = supply_cards.union(any_gained)
             if 'Tournament' in all_avail:
                 all_avail = all_avail.union(card_info.TOURNAMENT_WINNINGS)
             for card in all_avail:
-                accum_stats[card].available.AddOutcome(win_points)
+                accum_stats[card].available.add_outcome(win_points)
 
             if not counted_game_len:  # don't double count this
                 counted_game_len = True
                 game_len = game_val.get_turns()[-1].get_turn_no()
                 for card in supply_cards:
                     stats_obj = accum_stats[card]
-                    stats_obj.game_length.AddOutcome(game_len)
+                    stats_obj.game_length.add_outcome(game_len)
                     if 'Colony' in game_val.get_supply():
-                        stats_obj.game_length_colony.AddOutcome(game_len)
+                        stats_obj.game_length_colony.add_outcome(game_len)
 
         if idx + 1 == max_games:
             break

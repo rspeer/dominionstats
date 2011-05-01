@@ -95,36 +95,36 @@ $def with ( cards, player_data = None )
           $for card_name, buy_data in cards.iteritems():
             <tr>
               <td>$card_name</td>
-              $ game_denom = float(buy_data.available.Frequency() or 1)
+              $ game_denom = float(buy_data.available.frequency() or 1)
               $code:
                  def Norm(val, digits=2):
-                   return round(val.Frequency() / game_denom, digits)
-              <td>$buy_data.available.Frequency()</td>
+                   return round(val.frequency() / game_denom, digits)
+              <td>$buy_data.available.frequency()</td>
               <td>$Norm(buy_data.buys)</td>
               <td>$Norm(buy_data.gains)</td>
               <td>$(Norm(buy_data.any_gained, 3)*100)</td>
               <td>$Norm(buy_data.trashes)</td>
               <td>$Norm(buy_data.returns, 3)</td>
-              <td>$buy_data.any_gained.RenderInterval()</td>
-              <td>$buy_data.none_gained.RenderInterval()</td>
-              <td>$buy_data.game_length.RenderInterval()</td>
-              <td>$buy_data.game_length_colony.RenderInterval()</td>
+              <td>$buy_data.any_gained.render_interval()</td>
+              <td>$buy_data.none_gained.render_interval()</td>
+              <td>$buy_data.game_length.render_interval()</td>
+              <td>$buy_data.game_length_colony.render_interval()</td>
               $if player_data:
                 $ pdata = player_data[card_name]
-                $ game_denom = float(pdata.available.Frequency() or 1)
-                <td>$pdata.available.Frequency()</td>
-                <td>$pdata.available.RenderInterval()</td>
+                $ game_denom = float(pdata.available.frequency() or 1)
+                <td>$pdata.available.frequency()</td>
+                <td>$pdata.available.render_interval()</td>
                 <td>$Norm(pdata.buys)</td>
                 <td>$Norm(pdata.gains)</td>
                 <td>$(Norm(pdata.any_gained, 3)*100)</td>
                 <td>$Norm(pdata.trashes)</td>
                 <td>$Norm(pdata.returns)</td>
-                <td>$pdata.any_gained.RenderInterval()</td>
-                <td>$pdata.none_gained.RenderInterval()</td>
-                <td>$pdata.effect_with().RenderStdevs()</td>
-                <td>$pdata.effect_without().RenderStdevs()</td>
-                <td>$pdata.game_length.RenderInterval()</td>
-                <td>$pdata.game_length_colony.RenderInterval()</td>
+                <td>$pdata.any_gained.render_interval()</td>
+                <td>$pdata.none_gained.render_interval()</td>
+                <td>$pdata.effect_with().render_std_devs()</td>
+                <td>$pdata.effect_without().render_std_devs()</td>
+                <td>$pdata.game_length.render_interval()</td>
+                <td>$pdata.game_length_colony.render_interval()</td>
             </tr>
         </tbody>
       </table>

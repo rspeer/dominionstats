@@ -1,9 +1,21 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+""" The stats mdoule contains two objects for tracking distributions.
+
+The MeanVarStat keeps a running total of frequence, mean, and variance of
+a random variable.
+
+DiffStat supports finding the difference between two MeanVarStat objects.
+"""
+
+import math
+
 import primitive_util
 import mergeable
 
+# TODO: Make this support a variable prior (rather than the win-rate based
+# prior of 1 win, 1 loss in 2 2p games.
 class MeanVarStat(primitive_util.PrimitiveConversion, 
                   mergeable.MergeableObject):
     __slots__ = ('freq', 'sum', 'sum_sq')
@@ -13,28 +25,28 @@ class MeanVarStat(primitive_util.PrimitiveConversion,
         self.sum = 0.0
         self.sum_sq = 0.0
 
-    def AddOutcome(self, val):
+    def add_outcome(self, val):
         self.freq += 1
         self.sum += val
         self.sum_sq += val * val
 
-    def Frequency(self):
+    def frequency(self):
         return self.freq
 
-    def Mean(self):
+    def mean(self):
         return (self.sum + 2) / (self.freq + 2)
 
-    def Variance(self):
+    def variance(self):
         if self.freq <= 1:
             return 1e10
         return (((self.sum_sq + 4) - ((self.sum + 2) ** 2) / (self.freq + 2)) /
                 (self.freq + 1))
 
-    def StdDev(self):
-        return self.Variance() ** .5
+    def std_dev(self):
+        return self.variance() ** .5
  
-    def SampleStdDev(self):
-        return (self.Variance() / (self.freq + 2)) ** .5
+    def sample_std_dev(self):
+        return (self.variance() / (self.freq + 2)) ** .5
 
     def __add__(self, o):
         ret = MeanVarStat()
@@ -50,13 +62,13 @@ class MeanVarStat(primitive_util.PrimitiveConversion,
         ret.sum_sq = self.sum_sq - o.sum_sq
         return ret
 
-    def meanDiff(self, o):
+    def mean_diff(self, o):
         return DiffStat(self, o)
 
-    def RenderInterval(self, factor=2, sig_digits=2):
-        if self.SampleStdDev() >= 10000:
+    def render_interval(self, factor=2, sig_digits=2):
+        if self.sample_std_dev() >= 10000:
             return u'-'
-        return u'%.2f ± %.2f' % (self.Mean(), factor * self.SampleStdDev())
+        return u'%.2f ± %.2f' % (self.mean(), factor * self.sample_std_dev())
 
     def __eq__(self, o):
         assert type(o) == MeanVarStat
@@ -104,7 +116,8 @@ class DiffStat(object):
         return self.mvs1.mean() - self.mvs2.mean()
 
     def sample_std_dev(self):
-        return (self.mvs1.sample_std_dev() ** 2 + self.mvs2.sample_std_dev() ** 2) ** 0.5
+        return math.hypot(self.mvs1.sample_std_dev(), 
+                          self.mvs2.sample_std_dev())
 
     def mean_diff(self, o):
         return DiffStat(self, o)

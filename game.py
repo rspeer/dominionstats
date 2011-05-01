@@ -116,7 +116,7 @@ class PlayerDeck(object):
         if self.WinPoints() > 1:
             return 'green'
         if (opp and opp.WinPoints() == self.WinPoints()) or (
-        self.WinPoints() == 1):
+            self.WinPoints() == 1.0):
             return '#555555'
         return 'red'
 
