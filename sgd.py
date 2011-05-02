@@ -5,7 +5,9 @@ from bolt.io import Dataset, dense2sparse
 from bolt.trainer.sgd import SGD, Log
 from bolt.model import LinearModel
 from collections import defaultdict
+import math
 import numpy as np
+from pymongo import ASCENDING, DESCENDING
 
 con = get_mongo_connection()
 DB = con.test
@@ -18,6 +20,16 @@ CARDS_INDEX = {}
 for i, card in enumerate(CARDS):
     CARDS_INDEX[card] = i
 NCARDS = len(CARDS)
+
+def logit(x):
+    return 1.0 / (1.0 + math.exp(-x))
+
+def vp_only(deck):
+    newdeck = {}
+    for card in deck:
+        if card_info.IsVictory(card) or card == u'Curse':
+            newdeck[card] = deck[card]
+    return newdeck
 
 def decks_by_turn(game):
     turn_ordered_players = sorted(game.PlayerDecks(),
@@ -36,6 +48,7 @@ def decks_by_turn(game):
             turn_num += 1
         if turn_num > MAX_TURNS:
             break
+
 
 def deck_to_vector(deck):
     vec = np.zeros((NCARDS,))
@@ -57,10 +70,11 @@ def should_learn(game):
 
 class IsotropicDataset(Dataset):
     def __init__(self, which_games, turn):
-        self.games = which_games.find()[:10000]
+        self.games = which_games.find().sort('_id', DESCENDING)
         self.turn = turn
         self.n = which_games.count()
     def __iter__(self):
+        counter = 0
         for gamedata in self.games:
             game = Game(gamedata)
             if should_learn(game):
@@ -71,7 +85,7 @@ class IsotropicDataset(Dataset):
                         vec = deck_to_vector(deck_state)
                         turn_count += 1
                         turn_vec += vec * points
-                if turn_count == REQUIRED_PLAYERS:
+                if turn_count == REQUIRED_PLAYERS and not np.all(turn_vec == 0.0):
                     yield (dense2sparse(turn_vec), 1)
                     yield (dense2sparse(-turn_vec), 0)
     def shuffle(self):
@@ -91,4 +105,6 @@ def run_sgd(turn):
     out.close()
 
 if __name__ == '__main__':
-    run_sgd(25)
+    for turn in (10,):
+        print "turn = %d" % turn
+        run_sgd(turn)
