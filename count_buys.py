@@ -187,7 +187,7 @@ def main():
         utils.read_object_from_db(existing_overall_data, buy_collection, '')
         overall_stats.merge(existing_overall_data)
         def deck_freq(data_set):
-            return data_set['Estate'].available.Frequency()
+            return data_set['Estate'].available.frequency()
         print 'existing', deck_freq(existing_overall_data), 'decks'
         print 'after merge', deck_freq(overall_stats), 'decks'
 
