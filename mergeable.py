@@ -8,8 +8,8 @@ class MergeableObjectImpl(object):
             if k not in self_dict:
                 self_dict[k] = v
             else:
-                if hasattr(self_dict[k], 'Merge'):
-                    assert hasattr(v, 'Merge')
+                if hasattr(self_dict[k], 'merge'):
+                    assert hasattr(v, 'merge')
                     self_dict[k].merge(v)
                 else:
                     assert type(v) == type(self_dict[k])
