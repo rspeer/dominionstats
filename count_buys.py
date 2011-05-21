@@ -129,19 +129,6 @@ def add_effectiveness(accum_stats, global_stats):
         stats_obj.effectiveness_gain = card_gain_eff.mean_diff(any_eff)
         stats_obj.effectiveness_skip = card_skip_eff.mean_diff(any_eff)
 
-def progress_meter(iterable, chunksize):
-    """ Prints progress through iterable at chunksize intervals."""
-    scan_start = time.time()
-    since_last = time.time()
-    for idx, val in enumerate(iterable):
-        if idx % chunksize == 0 and idx > 0: 
-            print idx
-            print 'avg rate', idx / (time.time() - scan_start)
-            print 'inst rate', chunksize / (time.time() - since_last)
-            since_last = time.time()
-            print
-        yield val
-
 def do_scan(scanner, games_col, accum_stats, max_games):
     """ Use scanner to accumulate stats from games_col into accum_stats .
 
@@ -150,7 +137,8 @@ def do_scan(scanner, games_col, accum_stats, max_games):
     accum_stats: DeckBuyStats instance to store results.
     """
     def games_stream():
-        for raw_game in progress_meter(scanner.scan(games_col, {}), 1000):
+        for raw_game in utils.progress_meter(
+            scanner.scan(games_col, {}), 1000):
             yield game.Game(raw_game)
     accum_buy_stats(games_stream(), accum_stats, max_games=max_games)
 
