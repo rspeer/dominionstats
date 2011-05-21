@@ -65,9 +65,9 @@ class GamesAnalysis(PrimitiveConversion):
                 per_card_stat = self.card_stats[card]
                 if (deck, card) not in seen_cards_players:
                     seen_cards_players.add((deck, card))
-                    per_card_stat.win_any_accum.AddOutcome(deck.WinPoints())
-                per_card_stat.win_weighted_accum.AddOutcome(deck.WinPoints())
-                per_card_stat.win_weighted_accum_turn[turnno].AddOutcome(
+                    per_card_stat.win_any_accum.add_outcome(deck.WinPoints())
+                per_card_stat.win_weighted_accum.add_outcome(deck.WinPoints())
+                per_card_stat.win_weighted_accum_turn[turnno].add_outcome(
                     deck.WinPoints())
                 accumed_by_player[deck][card] += 1
                 
@@ -84,7 +84,7 @@ class GamesAnalysis(PrimitiveConversion):
                 per_card_stat = self.card_stats[card]
                 other_avg_freq = total_other_decks[card] / odeck_count
                 card_diff_index = int(card_accum_dict[card] - other_avg_freq)
-                per_card_stat.win_diff_accum[card_diff_index].AddOutcome(
+                per_card_stat.win_diff_accum[card_diff_index].add_outcome(
                     deck.WinPoints())
 
 def main():
