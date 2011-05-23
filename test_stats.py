@@ -4,16 +4,26 @@ import unittest
 import stats
 
 class RandomVariableStat(unittest.TestCase):
-    def testSimple(self):
+    def test_simple(self):
         d = stats.MeanVarStat()
-        d.AddOutcome(4)  # 10 - 4 = 6, 6^2 = 36
-        d.AddOutcome(16) # 16 - 10 = 6, 6^2 = 36
-        d.AddOutcome(13) # 13 - 10 = 3, 3^2 = 9
-        d.AddOutcome(7)  # 10 - 7 = 3, 3^2 = 9
-        #  36 + 36 + 9 + 9 = 90, 90 / 3 = 30
-        self.assertEquals(d.Frequency(), 4)
-        self.assertEquals(d.Mean(), 10)
-        self.assertEquals(d.Variance(), 30.0)
+        # prior says 1 2p win, 1 2p loss  # freq = 2, sum = 2, sum_sq = 4
+        d.add_outcome(2)                  # freq = 3, sum = 4, sum_sq = 8
+        d.add_outcome(3)                  # freq = 4, sum = 7, sum_sq = 17
+        self.assertEquals(d.frequency(), 2)
+        self.assertEquals(d.mean(), 7. / 4)
+        self.assertEquals(d.variance(), (17 - 49. / 4) / 3) 
+
+    def test_merge(self):
+        a = stats.MeanVarStat()
+        b = stats.MeanVarStat()
+
+        a.add_outcome(1)
+        b.add_outcome(1)
+        
+        b.merge(a)
+
+        self.assertEquals(b.frequency(), 2)
+
 
 if __name__ == '__main__':
     unittest.main()

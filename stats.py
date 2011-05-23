@@ -14,7 +14,7 @@ import math
 import primitive_util
 import mergeable
 
-# TODO: Make this support a variable prior (rather than the win-rate based
+# TODO: Make this support a variable prior, rather than the win-rate based
 # prior of 1 win, 1 loss in 2 2p games.
 class MeanVarStat(primitive_util.PrimitiveConversion, 
                   mergeable.MergeableObject):
@@ -87,8 +87,15 @@ class MeanVarStat(primitive_util.PrimitiveConversion,
         else:
             assert 'Confused by obj %s' % str(obj) and False
 
+    def merge(self, obj):
+        self.freq += obj.freq
+        self.sum += obj.sum
+        self.sum_sq += obj.sum_sq
+
     def __str__(self):
         return '%s, %s, %s' % (self.freq, self.sum, self.sum_sq)
+
+    
 
 class DiffStat(object):
     """
