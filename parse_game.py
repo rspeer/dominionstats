@@ -660,7 +660,6 @@ def parse_turns(turns_blob, names_list):
 
 def outer_parse_game(filename):
     """ Parse game from filename. """
-    print filename
     contents = codecs.open(filename, 'r', encoding='utf-8').read()
     if not contents:
         # print 'empty game'
