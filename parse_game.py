@@ -448,8 +448,11 @@ def _get_real_name(canon_name, names_list):
     return names_list[int(PLAYER_IND_RE.match(canon_name).group('num'))]
 
 class ParseTurnHeaderError(Exception):
-    def __init__(self, line):
-        self.line = line
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return 'ParseTurnHeaderError' 
 
 def parse_turn_header(turn_header_line, names_list = None):
     """ Given a turn header line return a dictionary containing 
@@ -488,7 +491,7 @@ def parse_turn_header(turn_header_line, names_list = None):
         parsed_header['outpost'] = True
         return parsed_header
 
-    raise ParseTurnHeaderError(turn_header_line)
+    raise ParseTurnHeaderError()
 
 def parse_turn(turn_blob, names_list):
     """ Parse the information from a given turn.
@@ -657,6 +660,7 @@ def parse_turns(turns_blob, names_list):
 
 def outer_parse_game(filename):
     """ Parse game from filename. """
+    print filename
     contents = codecs.open(filename, 'r', encoding='utf-8').read()
     if not contents:
         # print 'empty game'
@@ -704,10 +708,10 @@ def convert_to_json(year_month_day, games_to_parse = None):
         print 'no data files to parse in ', year_month_day
         return
 
-    # games_to_parse = games_to_parse[:1000]
+    #games_to_parse = games_to_parse[:1000]
     pool = multiprocessing.Pool()
     parsed_games = pool.map(outer_parse_game, games_to_parse, 
-                            chunksize=50)
+                            chunksize=1)
     #parsed_games = map(outer_parse_game, games_to_parse)
     print year_month_day, 'before filtering', len(parsed_games)
     parsed_games = [x for x in parsed_games if x]
@@ -719,6 +723,7 @@ def convert_to_json(year_month_day, games_to_parse = None):
     labelled_segments = [(i, year_month_day, c) for i, c in
                          enumerate(game_segments)]
     pool.map(dump_segment, labelled_segments)
+    #map(dump_segment, labelled_segments)
     pool.close()
 
 def track_brokenness(parsed_games):
@@ -800,7 +805,6 @@ def main():
     days.sort()
     for year_month_day in days:
         if not utils.includes_day(args, year_month_day):
-            print year_month_day, 'not in date range, skipping'
             continue
             
         if args.incremental and os.path.exists(
@@ -808,7 +812,11 @@ def main():
             print 'skipping', year_month_day, 'because already done'
             continue        
 
-        convert_to_json(year_month_day)
+        try:
+            convert_to_json(year_month_day)
+        except ParseTurnHeaderError, e:
+            print e
+            return
 
 def _pretty_format_html(v):
     return '<br>' + pprint.pformat(v).replace(
