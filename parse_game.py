@@ -710,7 +710,7 @@ def convert_to_json(year_month_day, games_to_parse = None):
     #games_to_parse = games_to_parse[:1000]
     pool = multiprocessing.Pool()
     parsed_games = pool.map(outer_parse_game, games_to_parse, 
-                            chunksize=1)
+                            chunksize=50)
     #parsed_games = map(outer_parse_game, games_to_parse)
     print year_month_day, 'before filtering', len(parsed_games)
     parsed_games = [x for x in parsed_games if x]
