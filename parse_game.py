@@ -235,6 +235,7 @@ def parse_game(game_str, dubious_check = False):
       game_end: List of cards exhausted that caused the game to end.
       resigned: True iff some player in the game resigned..
     """
+    game_str = game_str.replace('&mdash;', '---')
     try:
         split_sects = SECTION_SEP.split(game_str)
         header_str, decks_blob, trash_and_turns = split_sects
@@ -448,11 +449,14 @@ def _get_real_name(canon_name, names_list):
     return names_list[int(PLAYER_IND_RE.match(canon_name).group('num'))]
 
 class ParseTurnHeaderError(Exception):
-    def __init__(self):
-        pass
+    def __init__(self, line):
+        self.line = line
 
+    def __str__(self):
+        return repr(self)
+        
     def __repr__(self):
-        return 'ParseTurnHeaderError' 
+        return 'ParseTurnHeaderError %s' % self.line
 
 def parse_turn_header(turn_header_line, names_list = None):
     """ Given a turn header line return a dictionary containing 
@@ -491,7 +495,7 @@ def parse_turn_header(turn_header_line, names_list = None):
         parsed_header['outpost'] = True
         return parsed_header
 
-    raise ParseTurnHeaderError()
+    raise ParseTurnHeaderError(turn_header_line)
 
 def parse_turn(turn_blob, names_list):
     """ Parse the information from a given turn.
@@ -661,6 +665,7 @@ def parse_turns(turns_blob, names_list):
 def outer_parse_game(filename):
     """ Parse game from filename. """
     contents = codecs.open(filename, 'r', encoding='utf-8').read()
+
     if not contents:
         # print 'empty game'
         return None
@@ -674,6 +679,8 @@ def outer_parse_game(filename):
     except BogusGameError, bogus_game_exception:
         # print 'skipped', filename, 'because', bogus_game_exception.reason
         return None
+    except ParseTurnHeaderError, p:
+        print 'parse turn header error', p
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def segments(lis, chunk_size):
@@ -706,11 +713,13 @@ def convert_to_json(year_month_day, games_to_parse = None):
     if not games_to_parse:
         print 'no data files to parse in ', year_month_day
         return
+    else:
+        print len(games_to_parse), 'games to parse in', year_month_day
 
-    #games_to_parse = games_to_parse[:1000]
+    # games_to_parse = games_to_parse[:10]
     pool = multiprocessing.Pool()
-    parsed_games = pool.map(outer_parse_game, games_to_parse, 
-                            chunksize=50)
+    parsed_games = pool.map(outer_parse_game, games_to_parse, chunksize=50)
+
     #parsed_games = map(outer_parse_game, games_to_parse)
     print year_month_day, 'before filtering', len(parsed_games)
     parsed_games = [x for x in parsed_games if x]
@@ -812,6 +821,7 @@ def main():
             continue        
 
         try:
+            print 'trying', year_month_day
             convert_to_json(year_month_day)
         except ParseTurnHeaderError, e:
             print e
@@ -824,6 +834,7 @@ def _pretty_format_html(v):
 def annotate_game(contents, game_id, debug=False):
     """ Decorate game contents with some JS that makes a score keeper 
     and provides anchors per turn."""
+    contents = contents.replace('&mdash;', '---')
     parsed_game = parse_game(contents, dubious_check = False)
     states = []
     
