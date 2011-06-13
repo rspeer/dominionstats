@@ -95,16 +95,23 @@ class OpeningPage(object):
         results = db.trueskill_openings.find({'_id': {'$regex': '^open:'}})
         openings = list(results)
         card_list = card_info.OPENING_CARDS
-        if selected_card not in ('All cards', ''):
-            openings = [o for o in openings if selected_card in o['_id']]
+        def split_opening(o):
+            ret = o['_id'][len('open:'):].split('+')
+            if ret == ['']: return []
+            return ret
 
+        if selected_card not in ('All cards', ''):
+            openings = [o for o in openings if selected_card in 
+                        split_opening(o)]
+                        
+        openings = [o for o in openings if split_opening(o)]
         for opening in openings:
             floor = opening['mu'] - opening['sigma'] * 3
             ceil = opening['mu'] + opening['sigma'] * 3
             opening['level_key'] = make_level_key(floor, ceil)
             opening['level_str'] = make_level_str(floor, ceil)
             opening['skill_str'] = skill_str(opening['mu'], opening['sigma'])
-            opening['cards'] = opening['_id'][len('open:'):].split('+')
+            opening['cards'] = split_opening(opening)
             opening['cards'].sort()
             opening['cards'].sort(key=lambda card: (card_info.cost(card)),
                 reverse=True)
