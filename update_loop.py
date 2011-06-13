@@ -30,4 +30,4 @@ while True:
         os.system(cmd)
         os.system('mv %s static/status' % status_fn)
     print 'sleeping'
-    time.sleep(60*60*12)  # only try to update 2x per day.                                            
+    time.sleep(60*15)  # try to update every 15 mins
