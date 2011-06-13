@@ -13,7 +13,8 @@ cmds = [
     ('python load_parsed_data.py', False),  # loads data into database
     ('python analyze.py', False),            # produces data for graphs
     ('python goals.py', False),
-    ('python count_buys.py', False)
+    ('python count_buys.py', False),
+    ('python run_trueskill.py', False)
 ]
 
 extra_args = sys.argv[1:]
