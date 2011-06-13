@@ -1,3 +1,8 @@
+""" Scan over a collection and remember which documents were seen.
+
+This is useful for implementing daily updates, so that we only scan where we
+left off."""
+
 class IncrementalScanner(object):
     def __init__(self, scan_name, db):
         self.num_games = 0

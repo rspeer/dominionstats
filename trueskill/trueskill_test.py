@@ -1,65 +1,93 @@
 #!/usr/bin/python
 
 import pymongo
+import collections
 import random
 import trueskill
 
-PLAYER_SKILLS = (12, 8, 6)
-(GOOD_P, OKAY_P, BAD_P) = PLAYER_SKILLS
+PLAYER_SKILLS = (15, 10, 8, 6, 4)
+(GOOD_P, DECENT_P, OKAY_P, BAD_P, TERRIBLE_P) = PLAYER_SKILLS
 
-OPENING_STRENGTHS = (2, 0, -2)
-(GOOD_O, OKAY_O, BAD_O) = OPENING_STRENGTHS
+OPENING_STRENGTHS = (3, 2, 1, 0, -2)
+(GREAT_O, GOOD_O, DECENT_O, OKAY_O, BAD_O) = OPENING_STRENGTHS
 
-def ChooseFromDist(labels, weights):
+def choose_from_dist(labels, weights):
     r = random.random()
     for l, w in zip(labels, weights):
         if w > r:
             return l
         r -= w
 
-def SamplePlayerOpening():
+def sample_player_opening():
     p = random.choice(PLAYER_SKILLS)
     if p == GOOD_P:
-        o = ChooseFromDist(OPENING_STRENGTHS, [.2, .2, .6])
+        o = choose_from_dist(OPENING_STRENGTHS, [.05, .05, .05, .05, .8])
     else:
-        o = ChooseFromDist(OPENING_STRENGTHS, [.3, .3, .4])
+        o = choose_from_dist(OPENING_STRENGTHS, [.2, .2, .2, .2, .2])
     return p, o
 
-def SimTeam(t):
-    return random.random() * t[0] + t[1]
+def sim_team(t):
+    return random.random() * (t[0] + t[1])
 
-def SimGame(t1, t2):
-    return SimTeam(t1) > SimTeam(t2)
+def sim_game(teams):
+    results = [(-sim_team(t), t)  for t in teams]
+    return [t[1] for t in sorted(results)]
 
 def encode_team(t):
     return 'player' + str(t[0]),  'open:' + str(t[1])
 
 def encode_player(t):
-    return ('player' + str(t[0]),)
+    return ('player' + str(t[0]), )
 
-def sim_games(credit_assignment, blame, coll):
+def sim_games(credit_assignment, blame):
+    w, l = collections.defaultdict(int), collections.defaultdict(int)
+    skill_table = trueskill.SkillTable()
+
+    players_per_game = 3
     for i in range(1000):
-        t1, t2 = SamplePlayerOpening(), SamplePlayerOpening()
-        out = SimGame(t1, t2)
-        ranks = [0, 1]
-        if not out:
-            print t2, 'beats2', t1
-            ranks.reverse()
-        else:
-            print t1, 'beats1', t2
+        sample_teams = [sample_player_opening() for i in xrange(
+                players_per_game)]
+        players = set(t[0] for t in sample_teams)
+        if len(players) != players_per_game:
+            continue
+        openings = set(t[1] for t in sample_teams)
+        if len(players) != players_per_game:
+            continue
 
-        trueskill.db_update_trueskill(
-            [(credit_assignment(t1), blame, ranks[0]),
-             (credit_assignment(t2), blame, ranks[1])],
-            coll)
-    
+        output_order = sim_game(sample_teams)
+        for ind, t in enumerate(output_order):
+            if ind == 0:
+                d = w
+            else:
+                d = l
+            creds = credit_assignment(t)
+            if len(creds) > 1:
+                d[creds[0] + '-' + creds[1]] += 1
+            for cred in creds:
+                d[cred] += 1
+
+        trueskill.update_trueskill_team(
+            [(credit_assignment(t), blame, ind) for 
+             ind, t in enumerate(output_order)], skill_table)
+
+        def print_t_record(t):
+            print w[t[0]], w[t[1]], '-', l[t[0]], l[t[1]]
+
+        for t in output_order:
+            pass
+            #print_t_record(t)
+
+    for name, skill in skill_table.ordered_skills():
+        print name, skill.mu, w[name], l[name]
+    print
+    for k in sorted(w.keys()):
+        print k, w[k], l[k]
 
 def main():
-    c = pymongo.Connection()
-    coll = c.skill_test.skill
-
-    sim_games(encode_player, [1.0], coll)
-    sim_games(encode_team, [.5, .5], coll)
+    print 'just players'
+    sim_games(encode_player, [1.0])
+    print 'players with teams'
+    sim_games(encode_team, [.5, .5])
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,13 @@
 #!/usr/bin/python
 
+""" This a mixin to a generically serialize objects to primative types.
+
+This is serializing the internal variables of classes, and hence is a
+big abstraction leak.  By mixing with this class, you can give yourself 
+headaches if you change the implementation of a class and want to work
+with previously serialized versions of data.
+"""
+
 import collections
 
 PRIMITIVES = [dict, str, int, list, float, unicode]
@@ -7,7 +15,7 @@ PRIMITIVES = [dict, str, int, list, float, unicode]
 def to_primitive(val):
     if hasattr(val, 'to_primitive_object'):
         return val.to_primitive_object()
-    assert type(val) in PRIMITIVES, val
+    assert type(val) in PRIMITIVES, (val, type(val))
     return val
 
 class PrimitiveConversion(object):

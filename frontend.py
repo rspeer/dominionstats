@@ -82,7 +82,6 @@ def make_level_key(floor, ceil):
 def skill_str(mu, sigma):
     return u'%3.3f &plusmn; %3.3f' % (mu, sigma*3)
 
-
 class OpeningPage(object):
     def GET(self):
         web.header("Content-Type", "text/html; charset=utf-8")  
@@ -93,25 +92,19 @@ class OpeningPage(object):
         if 'card' in query_dict:
             selected_card = query_dict['card']
 
-        if selected_card not in ('All cards', ''):
-            query = db.trueskill_openings.find({'cards': selected_card})
-        else:
-            query = db.trueskill_openings.find({})
-
-        #offset = db.trueskill_openings.find_one({'name':
-        #    'open:Silver+Silver'})['mu']
-        offset = 0
-        openings = list(query)
+        results = db.trueskill_openings.find({'_id': {'$regex': '^open:'}})
+        openings = list(results)
         card_list = card_info.OPENING_CARDS
-        for opening in openings:
-            for stat in ('mu', 'floor', 'ceil'):
-                opening[stat] -= offset
+        if selected_card not in ('All cards', ''):
+            openings = [o for o in openings if selected_card in o['_id']]
 
-            floor = opening['floor']
-            ceil = opening['ceil']
+        for opening in openings:
+            floor = opening['mu'] - opening['sigma'] * 3
+            ceil = opening['mu'] + opening['sigma'] * 3
             opening['level_key'] = make_level_key(floor, ceil)
             opening['level_str'] = make_level_str(floor, ceil)
             opening['skill_str'] = skill_str(opening['mu'], opening['sigma'])
+            opening['cards'] = opening['_id'][len('open:'):].split('+')
             opening['cards'].sort()
             opening['cards'].sort(key=lambda card: (card_info.cost(card)),
                 reverse=True)
@@ -125,7 +118,7 @@ class OpeningPage(object):
         if selected_card == '':
             openings = [op for op in openings
                         if op['level_key'][0] != 0
-                        or op['cards'] == ['Silver', 'Silver']]
+                        or op['_id'] == ['Silver', 'Silver']]
 
         render = web.template.render('')
         return render.openings_template(openings, card_list, selected_card)
