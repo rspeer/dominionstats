@@ -336,9 +336,9 @@ class SkillInfo:
 
 def default_missing_func(name):
   if name.startswith('open:'):  # this is ugly ;(
-    return SkillInfo(25, 25./3, 0)
+    return SkillInfo(0.0, 25./3, 0)
   else:
-    return SkillInfo(25, 25./3, 25./300)
+    return SkillInfo(25.0, 25./3, 25./300)
 
 class SkillTable:
   def __init__(self, missing_func=None):

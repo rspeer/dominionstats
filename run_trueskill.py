@@ -33,12 +33,13 @@ class DbBackedSkillTable(ts.SkillTable):
             skill_info.sigma = db_data['sigma']
             skill_info.gamma = db_data['gamma']
         else:
-            skill_info.mu = 25
             skill_info.sigma = 25.0/3
             if name.startswith('open:'):
                 skill_info.gamma = 0.0001
+                skill_info.mu = 0
             else:
                 skill_info.gamma = 25.0/300
+                skill_info.mu = 25
 
         self.skill_infos[name] = skill_info
         return self.skill_infos[name]
