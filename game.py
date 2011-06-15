@@ -82,6 +82,7 @@ class PlayerDeck(object):
         self.points = player_deck_dict['points']
         self.deck = player_deck_dict['deck']
         self.turn_order = player_deck_dict['order']
+        self.num_real_turns = 0
 
     def Name(self):
         return self.player_name
@@ -103,6 +104,12 @@ class PlayerDeck(object):
 
     def Deck(self):
         return self.deck
+
+    def set_num_turns(self, t):
+        self.num_real_turns = t
+
+    def num_turns(self):
+        return self.num_real_turns
 
     @staticmethod
     def PlayerLink(player_name, anchor_text=None):
@@ -143,10 +150,12 @@ class Game(object):
                     turn_ct += 1
                     poss_ct, out_ct = 0, 0
                 self.turns.append(Turn(turn, game_dict, pd, turn_ct, poss_ct))
+            pd.set_num_turns(turn_ct)
 
         self.turns.sort(key=lambda x: (x.get_turn_no(),
                                        x.get_player().TurnOrder(),
                                        x.get_poss_no()))
+
 
     def get_player_deck(self, player_name):
         for p in self.player_decks:
