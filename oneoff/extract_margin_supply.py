@@ -26,17 +26,5 @@ def main():
         output_fn.write('%f:%s\n' % (first_player_margin(g), 
                                    ','.join(g.get_supply())))
 
-
-    # length = len(retained_games)
-    # median = length / 2 
-    # median_margin = first_player_margin(retained_games[median])
-    # first_0, last_0 = -1, -1
-    # for ind, g in retained_games:
-    #     if first_player_margin(g) == 0:
-    #         if first_0 != -1:
-    #             first_0 = ind
-    #         last_0 = ind
-    # print 'median margin is', median_margin, 
-
 if __name__ == "__main__":
     main()
