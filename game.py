@@ -170,8 +170,11 @@ class Game(object):
     def get_supply(self):
         return self.supply
 
-    def get_player_decks(self):
-        return self.player_decks
+    def get_player_decks(self, sort_by_turn_order=False):
+        if sort_by_turn_order:
+            return sorted(self.player_decks, key=PlayerDeck.TurnOrder)
+        else:
+            return self.player_decks
 
     def all_player_names(self):
         return [pd.Name() for pd in self.player_decks]
@@ -285,8 +288,8 @@ class Game(object):
 class GameState(object):
     def __init__(self, game):
         self.game = game
-        self.turn_ordered_players = sorted(game.get_player_decks(),
-                                           key=PlayerDeck.TurnOrder)
+        self.turn_ordered_players = game.get_player_decks(
+            sort_by_turn_order=True)
         self.supply = ConvertibleDefaultDict(value_type=int)
         num_players = len(game.get_player_decks())
         for card in itertools.chain(card_info.EVERY_SET_CARDS,
