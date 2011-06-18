@@ -272,7 +272,7 @@ class PlayerPage(object):
 
         ret += goals.MaybeRenderGoals(db, norm_target_player)
 
-        ret += '<A HREF="/popular_buys?player=%"><h2>Stats by card</h2></A><BR>\n' % target_player
+        ret += '<A HREF="/popular_buys?player=%s"><h2>Stats by card</h2></A><BR>\n' % target_player
 
         ret += '<h2>Most recent games</h2>\n'
         game_list.sort(key = game.Game.get_id, reverse = True)
