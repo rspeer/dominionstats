@@ -214,16 +214,16 @@ class PlayerPage(object):
             target_player_cur_name = target_player_cur_name_cand[0]
             aliases.add(target_player_cur_name)
             for p in game_val.get_player_decks():
-                if p.Name() != target_player_cur_name:
-                    other_norm_name = norm_name(p.Name())
+                if p.name() != target_player_cur_name:
+                    other_norm_name = norm_name(p.name())
                     keyed_by_opp[other_norm_name].append(
-                        (p.Name(), target_player_cur_name, game_val))
-                    real_name_usage[other_norm_name][p.Name()] += 1
+                        (p.name(), target_player_cur_name, game_val))
+                    real_name_usage[other_norm_name][p.name()] += 1
                 else:
                     #this is getting fidgety about 80 chars, which sometimes
                     #can mean that it's getting too nested and could use a
                     #rethink
-                    res = game_val.win_loss_tie(p.Name())
+                    res = game_val.win_loss_tie(p.name())
                     overall_record.record_result(res, p.WinPoints())
                     game_len = len(game_val.get_player_decks())
                     rec_by_game_size[game_len].record_result(res,
