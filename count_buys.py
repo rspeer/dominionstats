@@ -20,6 +20,9 @@ import utils
 
 NO_INFO = MVS().mean_diff(MVS())
 
+PROV_SMOOTH = 21.4
+COLONY_SMOOTH = 23.5
+
 class BuyStat(primitive_util.PrimitiveConversion, mergeable.MergeableObject):
     """ A bunch of MeanVar statistics about card buys/game length, etc """
 
@@ -30,9 +33,10 @@ class BuyStat(primitive_util.PrimitiveConversion, mergeable.MergeableObject):
         self.returns = MVS()
         self.any_gained = MVS()
         self.available = MVS()
-        # Turn length stats are wrong, need different prior for mean var stat
-        self.game_length = MVS() 
-        self.game_length_colony = MVS()
+
+        self.game_length = MVS(1.0, PROV_SMOOTH, PROV_SMOOTH * PROV_SMOOTH) 
+        self.game_length_colony = MVS(1.0, COLONY_SMOOTH, 
+                                      COLONY_SMOOTH * COLONY_SMOOTH)
     
     @property
     def none_gained(self):
