@@ -22,9 +22,9 @@ extra_args = sys.argv[1:]
 # should think about how to parrallelize this for multiprocessor machines.
 while True:
     for cmd, spittable in cmds:
-        status_fn = (date.today().isoformat() + '-' +
-                     time.strftime('%H:%M:%S') +
-                     '-' + cmd.replace(' ', '_') + '.txt')
+        status_fn = (cmd.replace(' ', '_') + '-' + 
+                     date.today().isoformat() + '-' +
+                     time.strftime('%H:%M:%S') + '.txt')
         cmd = cmd + ' ' + ' '.join(extra_args) + ' 2>&1 | tee -a ' + status_fn
         print cmd
         os.system(cmd)
