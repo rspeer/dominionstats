@@ -882,40 +882,15 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
     cur_turn_ind = 0
     
     split_turn_chunks = split_turns(contents)
-    poss_num = 0
     ret += split_turn_chunks[0]
     split_turn_chunks.pop(0)
 
     for idx, (turn_chunk, game_state) in enumerate(
         itertools.izip(split_turn_chunks, game_val.game_state_iterator())):
         split_chunk = turn_chunk.split('\n')
-        parsed_header = parse_turn_header(split_chunk[0])
 
-        player = parsed_header['name']
-        if 'turn_no' in parsed_header:
-            turn_no = parsed_header['turn_no'] - 1
-            # these turn id's are 0 indexed
-            turn_id = '%s-turn-%d' % (player, turn_no)
-            # and since these are shown, they are 1 indexed
-            show_turn_id = '%s-show-turn-%d' % (player, turn_no + 1)
-            poss_num = 0
-        elif 'pname' in parsed_header:
-            # port the turn labeller back to game.py?
-            turn_id = '%s-poss-turn-%d-%d' % (player, turn_no,
-                                              poss_num)
-            show_turn_id = '%s-show-poss-turn-%d-%d' % (
-                player, turn_no + 1, poss_num + 1)
-            poss_num += 1
-        else:
-            assert 'outpost' in parsed_header, str(parsed_header)
-            turn_id = '%s-outpost-turn-%d' % (player, turn_no)
-            show_turn_id = '%s-show-outpost-turn-%d' % (
-                player, turn_no + 1)
-            poss_num = 0
-
-        assert game_state.turn_label() == turn_id, '%s != %s %d' % (
-            game_state.turn_label(), turn_id, idx)
-        assert game_state.turn_label(for_display=True) == show_turn_id
+        turn_id = game_state.turn_label()
+        show_turn_id = game_state.turn_label(for_anchor=True)
         ret += '<div id="%s"></div>' % turn_id
         ret += '<a name="%s"></a><a href="#%s">%s</a>' % (
             show_turn_id, show_turn_id, split_chunk[0])

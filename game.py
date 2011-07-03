@@ -63,19 +63,23 @@ class Turn(object):
     def get_poss_no(self):
         return self.poss_no
 
-    def turn_label(self, for_display=False):
+    def turn_label(self, for_anchor=False, for_display=False):
         if 'outpost' in self.turn_dict:
             fmt = '%(pname)s-%(show)soutpost-turn-%(turn_no)d'
         elif self.poss_no:
             fmt = '%(pname)s-%(show)sposs-turn-%(turn_no)d-%(poss_no)d'
         else:
             fmt = '%(pname)s-%(show)sturn-%(turn_no)d'
-        show = 'show-' if for_display else ''
+        show = 'show-' if for_anchor else ''
 
-        return fmt % {'pname': self.player.name(),
-                      'turn_no': self.turn_no - int(not for_display),
-                      'poss_no': self.poss_no,
-                      'show': show}
+        if for_display:
+            fmt = fmt.replace('-', ' ')
+
+        return fmt % {
+            'pname': self.player.name(),
+            'turn_no': self.turn_no - int(not (for_anchor or for_display)),
+            'poss_no': self.poss_no,
+            'show': show}
 
     def deck_changes(self):
         ret = []
@@ -351,8 +355,13 @@ class GameState(object):
         return self.player_decks[player]
 
     def encode_game_state(self):
-        return {'supply': self.supply.to_primitive_object(),
-                'player_decks': self.player_decks.to_primitive_object()}
+        return {
+            'supply': self.supply.to_primitive_object(),
+            'player_decks': self.player_decks.to_primitive_object(),
+            'label': self.turn_label(),
+            'display_label': self.turn_label(for_display=True),
+            'player': self.cur_turn.player.name() if self.cur_turn else ''
+            }
 
     def _player_at_turn_ind(self, given_turn_ind):
         return self.game.get_turns()[given_turn_ind].get_player()
@@ -380,10 +389,10 @@ class GameState(object):
             apply_diff(deck_change.trashes, deck_change.name, 0, -1)
             apply_diff(deck_change.returns, deck_change.name, 1, -1)
 
-    def turn_label(self, for_display=False):
+    def turn_label(self, for_anchor=False, for_display=False):
         if not self.cur_turn:
             return 'end-game'
-        return self.cur_turn.turn_label(for_display)
+        return self.cur_turn.turn_label(for_anchor, for_display)
 
     def __iter__(self):
         self.turn_ind = 0
