@@ -89,6 +89,7 @@ class Turn(object):
         my_change.buys = self.buys
         my_change.trashes = self.turn_dict.get('trashes', [])
         my_change.returns = self.turn_dict.get('returns', [])
+        my_change.vp_tokens += self.turn_dict.get('vp_tokens', 0)
 
         opp_info = self.turn_dict.get('opp', {})
         for opp_name, info_dict in opp_info.iteritems():
@@ -341,6 +342,7 @@ class GameState(object):
 
         self.player_decks = ConvertibleDefaultDict(
             value_type=lambda: ConvertibleDefaultDict(int))
+        self.player_vp_tokens = collections.defaultdict(int)
 
         self.supply['Copper'] = self.supply['Copper'] - (
             len(self.turn_ordered_players) * 7)
@@ -355,12 +357,17 @@ class GameState(object):
         return self.player_decks[player]
 
     def encode_game_state(self):
+        scores = {}
+        for name in self.player_decks:
+            scores[name] = (score_deck(self.player_decks[name]) + 
+                            self.player_vp_tokens[name])
         return {
             'supply': self.supply.to_primitive_object(),
             'player_decks': self.player_decks.to_primitive_object(),
             'label': self.turn_label(),
             'display_label': self.turn_label(for_display=True),
-            'player': self.cur_turn.player.name() if self.cur_turn else ''
+            'player': self.cur_turn.player.name() if self.cur_turn else '',
+            'scores': scores,
             }
 
     def _player_at_turn_ind(self, given_turn_ind):
@@ -388,6 +395,7 @@ class GameState(object):
                       deck_change.name, -1, 1)
             apply_diff(deck_change.trashes, deck_change.name, 0, -1)
             apply_diff(deck_change.returns, deck_change.name, 1, -1)
+            self.player_vp_tokens[deck_change.name] += deck_change.vp_tokens
 
     def turn_label(self, for_anchor=False, for_display=False):
         if not self.cur_turn:

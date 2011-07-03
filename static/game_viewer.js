@@ -88,11 +88,11 @@ function RenderGameState(state_ind) {
   var state = game.game_states[state_ind];
   var rendered = RenderCardFreqs(state.supply);
 
-  rendered += game.game_states[state_ind].display_label + '<br>\n';
+  rendered += state.display_label + '<br>\n';
 
   for (var i = 0; i < game.decks.length; ++i) {
     var name = game.decks[i].name;
-    rendered += name + ': ' +
+    rendered += name + ': ' + state.scores[name] + ' points : ' +
       RenderCardFreqLine(state.player_decks[name]) + '<br>';
   }
   return rendered;
