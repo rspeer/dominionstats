@@ -25,11 +25,13 @@ class PlayerDeckChange(object):
         # game class that uses a frequency dict.
         for cat in self.CATEGORIES:
             setattr(self, cat, [])
+        self.vp_tokens = 0
 
     def merge_changes(self, other_changes):
         assert self.name == other_changes.name
         for cat in self.CATEGORIES:
             getattr(self, cat).extend(getattr(other_changes, cat))
+        self.vp_tokens += other_changes.vp_tokens
 
 class Turn(object):
     def __init__(self, turn_dict, game, player, turn_no, poss_no):
@@ -60,6 +62,20 @@ class Turn(object):
 
     def get_poss_no(self):
         return self.poss_no
+
+    def turn_label(self, for_display=False):
+        if 'outpost' in self.turn_dict:
+            fmt = '%(pname)s-%(show)soutpost-turn-%(turn_no)d'
+        elif self.poss_no:
+            fmt = '%(pname)s-%(show)sposs-turn-%(turn_no)d-%(poss_no)d'
+        else:
+            fmt = '%(pname)s-%(show)sturn-%(turn_no)d'
+        show = 'show-' if for_display else ''
+
+        return fmt % {'pname': self.player.name(),
+                      'turn_no': self.turn_no - int(not for_display),
+                      'poss_no': self.poss_no,
+                      'show': show}
 
     def deck_changes(self):
         ret = []
@@ -364,10 +380,22 @@ class GameState(object):
             apply_diff(deck_change.trashes, deck_change.name, 0, -1)
             apply_diff(deck_change.returns, deck_change.name, 1, -1)
 
+    def turn_label(self, for_display=False):
+        if not self.cur_turn:
+            return 'end-game'
+        return self.cur_turn.turn_label(for_display)
+
     def __iter__(self):
-        yield self
+        self.turn_ind = 0
+        self.cur_turn = self.game.get_turns()[self.turn_ind]
+        yield self  # this yield self crap is ugly, leads to bugs :(
         for turn_ind, turn in enumerate(self.game.get_turns()):
             self.turn_ind = turn_ind + 1
+            if self.turn_ind < len(self.game.get_turns()):
+                self.cur_turn = self.game.get_turns()[self.turn_ind]
+            else:
+                self.cur_turn = None
             self._take_turn(turn)
             yield self
+
             

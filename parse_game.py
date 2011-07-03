@@ -5,6 +5,7 @@
 
 import collections
 import codecs
+import itertools
 import os
 import multiprocessing
 import pprint
@@ -885,7 +886,8 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
     ret += split_turn_chunks[0]
     split_turn_chunks.pop(0)
 
-    for idx, turn_chunk in enumerate(split_turn_chunks):
+    for idx, (turn_chunk, game_state) in enumerate(
+        itertools.izip(split_turn_chunks, game_val.game_state_iterator())):
         split_chunk = turn_chunk.split('\n')
         parsed_header = parse_turn_header(split_chunk[0])
 
@@ -911,6 +913,9 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
                 player, turn_no + 1)
             poss_num = 0
 
+        assert game_state.turn_label() == turn_id, '%s != %s %d' % (
+            game_state.turn_label(), turn_id, idx)
+        assert game_state.turn_label(for_display=True) == show_turn_id
         ret += '<div id="%s"></div>' % turn_id
         ret += '<a name="%s"></a><a href="#%s">%s</a>' % (
             show_turn_id, show_turn_id, split_chunk[0])
