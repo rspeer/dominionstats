@@ -35,7 +35,7 @@ import incremental_scanner
 #                 if card_vp >= 6:
 #                     big_vp_cards += 1
 #             if big_vp_cards >= 3 and total_vp_cards >= 8:
-#                 return [last_turn.Player().Name()]
+#                 return [last_turn.Player().name()]
 #     return []
 #FIXME: this is still a Work in Progress unfortunately
 def CheckMatchBOM(g):
@@ -76,7 +76,7 @@ def CheckMatchNegativeSum(g):
     ret = []
     for player in g.get_player_decks():
         if player.WinPoints() > 1.0 and player.Points() < 0:
-            ret.append({'player': player.Name(),
+            ret.append({'player': player.name(),
                         'reason': 'Won with a negative score, %d points' % (
                         player.Points())})
     return ret
