@@ -322,6 +322,9 @@ def score_deck(deck_comp):
         ret += deck_comp['Duke'] * deck_comp.get('Duchy', 0)
     if 'Fairgrounds' in deck_comp:
         ret += len(deck_comp.keys()) / 5 * deck_comp['Fairgrounds']
+    if 'Vineyard' in deck_comp:
+        ret += sum(deck_comp[card] if card_info.is_action(card) else 0
+                   for card in deck_comp) / 3 * deck_comp['Vineyard']
 
     for card in deck_comp:
         ret += card_info.vp_per_card(card) * deck_comp[card]
