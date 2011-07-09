@@ -910,8 +910,16 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
             ret += turn_chunk[turn_chunk.find('\n'): before_end]
             ret += """
 <div id="end-game"></div>
-<div id="score-graph" style="width:400px;height:200px;"></div>
-<div id="money-graph" style="width:400px;height:200px;"></div>
+<table>
+  <tr>
+    <td>score</td>
+    <td><div id="score-graph" style="width:400px;height:200px;"></div></td>
+  </tr>
+  <tr>
+    <td>money</td>
+    <td><div id="money-graph" style="width:400px;height:200px;"></div></td>
+  </tr>
+</table>
 """
             ret += '</div>&nbsp<br>\n' * 20  
             ret += '</html>'
