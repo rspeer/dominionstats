@@ -81,6 +81,9 @@ class Turn(object):
             'poss_no': self.poss_no,
             'show': show}
 
+    def money(self):
+        return self.turn_dict.get('money', 0)
+
     def deck_changes(self):
         ret = []
         my_change = PlayerDeckChange(self.player.name())
@@ -364,14 +367,18 @@ class GameState(object):
         for name in self.player_decks:
             scores[name] = (score_deck(self.player_decks[name]) + 
                             self.player_vp_tokens[name])
-        return {
+        ret = {
             'supply': self.supply.to_primitive_object(),
             'player_decks': self.player_decks.to_primitive_object(),
+            'scores': scores,
             'label': self.turn_label(),
             'display_label': self.turn_label(for_display=True),
             'player': self.cur_turn.player.name() if self.cur_turn else '',
-            'scores': scores,
+            'money': self.cur_turn.money() if self.cur_turn else 0,
+            'turn_no': self.cur_turn.turn_no if self.cur_turn else
+              self.game.get_turns()[-1].turn_no + 1
             }
+        return ret
 
     def _player_at_turn_ind(self, given_turn_ind):
         return self.game.get_turns()[given_turn_ind].get_player()

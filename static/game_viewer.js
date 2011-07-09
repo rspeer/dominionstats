@@ -11,6 +11,42 @@ function IsScrolledIntoView(elem, bottom_buffer) {
   return ((elemBottom >= docViewTop) && (elemTop <= docViewBottom));
 }
 
+function ScoreExtractor(player, game_state) {
+  return game_state.scores[player];
+}
+
+function MoneyExtractor(player, game_state) {
+  if (game_state.player == player) {
+    return game_state.money;
+  }
+  return -1;
+}
+
+function MakeSeriesForPlayer(player_name, extractor) {
+  var data_list = [];
+  for (var i = 0; i < game.game_states.length; ++i) {
+    // We could do something fancy/complicated with poss/outpost turns,
+    // but it's probably not worth it.
+    var game_state = game.game_states[i];
+    var turn = game_state.turn_no;
+    var extracted = extractor(player_name, game_state);
+    if (extracted != -1) {
+      data_list.push([turn, extracted]);
+    }
+  }
+  return {
+    label: player_name, data: data_list
+  };
+}
+
+function MakeSeriesForPlayers(extractor) {
+  var point_lists = [];
+  for (var i = 0; i < game.players.length; ++i) {
+    point_lists.push(MakeSeriesForPlayer(game.players[i], extractor));
+  }
+  return point_lists;
+}
+
 function DecorateGame() {
   game.decks.sort(function(a, b) { return a.order - b.order; });
 
@@ -21,6 +57,14 @@ function DecorateGame() {
   $('#game-display').css({position: 'fixed', background: '#ffffff',
 			  bottom: 0, 'border-style': 'groove', padding:'3px'
 			 });
+
+  var graph_opts = {
+    legend: { position: 'nw'},
+    yaxis: { tickDecimals: 0 }
+  };
+
+  $.plot($('#score-graph'), MakeSeriesForPlayers(ScoreExtractor), graph_opts);
+  $.plot($('#money-graph'), MakeSeriesForPlayers(MoneyExtractor), graph_opts);
 
   $(window).scroll(UpdateDisplay);
 }
@@ -84,7 +128,6 @@ function RenderCardFreqs(card_freqs) {
 }
 
 function RenderGameState(state_ind) {
-  console.log("RenderGameState " + state_ind);
   var state = game.game_states[state_ind];
   var rendered = RenderCardFreqs(state.supply);
 
@@ -99,7 +142,6 @@ function RenderGameState(state_ind) {
 }
 
 function UpdateDisplay() {
-  console.log("UpdateDisplay");
   var max_active = -1;
   var game_display_height = $('#game-display').height();
   for (var i = 0; i < game.game_states.length; ++i) {

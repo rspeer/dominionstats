@@ -44,6 +44,7 @@ KW_DISCARDS = ' discards '
 KW_GAINING = ' gaining ' 
 KW_GAINS_A = ' gains a'
 KW_GAINS_THE = ' gains the '
+KW_GET = 'get +'
 KW_GETS = ' gets +'
 KW_GETTING = ' getting +'
 KW_IS_TRASHED = ' is trashed.'
@@ -611,7 +612,7 @@ def parse_turn(turn_blob, names_list):
         if KW_REVEALING in line and KW_TO_THE_SUPPLY in line:
             # old style ambassador line
             returns.extend(capture_cards(line))
-        if KW_GETTING in line or KW_GETS in line:
+        if KW_GETTING in line or KW_GETS in line or KW_GET in line:
             money_match = GETTING_MONEY_RE.search(line)
             if money_match:
                 turn_money += int(money_match.group(1))
@@ -853,6 +854,8 @@ def annotate_game(contents, game_id, debug=False):
 <div id="game-display"></div>
 <script src="static/flot/jquery.js"></script>
 <script src="static/game_viewer.js"></script>
+<script src="static/flot/jquery.js"></script>
+<script src="static/flot/jquery.flot.js"></script>
 <script type="text/javascript">
         var game = %s;
         var card_list = %s;
@@ -905,8 +908,12 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
         else:            
             before_end = turn_chunk.find('</html')
             ret += turn_chunk[turn_chunk.find('\n'): before_end]
-            ret += '<div id="end-game">\n'
-            ret += '</div>&nbsp<br>\n' * 10  
+            ret += """
+<div id="end-game"></div>
+<div id="score-graph" style="width:400px;height:200px;"></div>
+<div id="money-graph" style="width:400px;height:200px;"></div>
+"""
+            ret += '</div>&nbsp<br>\n' * 20  
             ret += '</html>'
     return ret
     
