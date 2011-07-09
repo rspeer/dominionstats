@@ -19,19 +19,25 @@ function MoneyExtractor(player, game_state) {
   if (game_state.player == player) {
     return game_state.money;
   }
-  return -1;
+  return -101;
 }
 
 function MakeSeriesForPlayer(player_name, extractor) {
   var data_list = [];
+  var output_per_turn_ct = [];
+  var num_players = game.players.length;
   for (var i = 0; i < game.game_states.length; ++i) {
     // We could do something fancy/complicated with poss/outpost turns,
     // but it's probably not worth it.
     var game_state = game.game_states[i];
     var turn = game_state.turn_no;
     var extracted = extractor(player_name, game_state);
-    if (extracted != -1) {
-      data_list.push([turn, extracted]);
+    if (extracted != -101) {
+      if (turn >= output_per_turn_ct.length) output_per_turn_ct[turn] = 0;
+      var offset = Math.min(output_per_turn_ct[turn], num_players - 1) /
+                     num_players;
+      data_list.push([turn + offset, extracted]);
+      output_per_turn_ct[turn]++;
     }
   }
   return {

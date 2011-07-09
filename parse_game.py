@@ -921,7 +921,7 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
   </tr>
 </table>
 """
-            ret += '</div>&nbsp<br>\n' * 20  
+            ret += '</div>&nbsp<br>\n' * 10 
             ret += '</html>'
     return ret
     
