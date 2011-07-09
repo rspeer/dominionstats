@@ -912,12 +912,12 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
 <div id="end-game"></div>
 <table>
   <tr>
-    <td>score</td>
-    <td><div id="score-graph" style="width:400px;height:200px;"></div></td>
+    <td width=50px>score</td>
+    <td><div id="score-graph" style="width:1000px;height:250px;"></div></td>
   </tr>
   <tr>
-    <td>money</td>
-    <td><div id="money-graph" style="width:400px;height:200px;"></div></td>
+    <td width=50px>money</td>
+    <td><div id="money-graph" style="width:1000px;height:250px;"></div></td>
   </tr>
 </table>
 """

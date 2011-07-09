@@ -24,7 +24,7 @@ function MoneyExtractor(player, game_state) {
 
 function MakeSeriesForPlayer(player_name, extractor) {
   var data_list = [];
-  var output_per_turn_ct = [];
+  var output_per_turn_ct = [];  // make it so p1 and p2 turn x don't overdraw.
   var num_players = game.players.length;
   for (var i = 0; i < game.game_states.length; ++i) {
     // We could do something fancy/complicated with poss/outpost turns,
@@ -64,9 +64,25 @@ function DecorateGame() {
 			  bottom: 0, 'border-style': 'groove', padding:'3px'
 			 });
 
+  var game_states = game.game_states;
+  var last_state = game_states[game_states.length - 2];
+
+  var xaxis_max = last_state.turn_no + 1;
+
+  function format(number) {
+    var asStr = '<div style="width:30px">' + number + '</div>';
+    return asStr;
+  }
+
+  // Try to make sure the graphs are vertically aligned by making sure they
+  // have the same axis extents even though the score has an additional
+  // turn over money because of the end game, and by making sure the x axis
+  // labels use the same number of characters, even though the scores tend
+  // to be longer and possibly negative.
   var graph_opts = {
     legend: { position: 'nw'},
-    yaxis: { tickDecimals: 0 }
+    xaxis: { tickDecimals: 0,  max: xaxis_max},
+    yaxis: { tickDecimals: 0, tickFormatter: format}
   };
 
   $.plot($('#score-graph'), MakeSeriesForPlayers(ScoreExtractor), graph_opts);
