@@ -61,6 +61,14 @@ def is_victory(singular_card_name):
 def is_action(singular_card_name):
     return _card_info_rows[singular_card_name]['Action'] == '1'
 
+def num_plus_actions(singular_card_name):
+    r = _card_info_rows[singular_card_name]['Actions']
+    try:
+        return int(r)
+    except ValueError:
+        # variable number of plus actions, just say 1
+        return 1
+
 def num_copies_per_game(card_name, num_players):
     if is_victory(card_name):
         if num_players >= 3:

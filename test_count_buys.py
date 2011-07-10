@@ -14,12 +14,12 @@ class TestBuyStats(unittest.TestCase):
 
         a.available.add_outcome(1)
         b.available.add_outcome(3)
-        self.assertEquals(a.available.frequency(), 1)
-        self.assertEquals(b.available.frequency(), 1)
+        self.assertEquals(a.available.real_frequency(), 1)
+        self.assertEquals(b.available.real_frequency(), 1)
 
         b.merge(a)
 
-        self.assertEquals(b.available.frequency(), 2)
+        self.assertEquals(b.available.real_frequency(), 2)
 
     def test_merge_deck_buy_stats(self):
         a = count_buys.DeckBuyStats()
@@ -28,10 +28,10 @@ class TestBuyStats(unittest.TestCase):
         a['Estate'].available.add_outcome(2)
         b['Estate'].available.add_outcome(0)
 
-        self.assertEquals(a['Estate'].available.frequency(), 1)
-        self.assertEquals(b['Estate'].available.frequency(), 1)
+        self.assertEquals(a['Estate'].available.real_frequency(), 1)
+        self.assertEquals(b['Estate'].available.real_frequency(), 1)
         b.merge(a)
-        self.assertEquals(b['Estate'].available.frequency(), 2)
+        self.assertEquals(b['Estate'].available.real_frequency(), 2)
 
 if __name__ == '__main__':
     unittest.main()
