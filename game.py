@@ -362,11 +362,15 @@ class GameState(object):
     def get_deck_composition(self, player):
         return self.player_decks[player]
 
+    def player_score(self, player_name):
+        return (score_deck(self.player_decks[player_name]) +
+                self.player_vp_tokens[player_name])
+
     def encode_game_state(self):
         scores = {}
         for name in self.player_decks:
-            scores[name] = (score_deck(self.player_decks[name]) + 
-                            self.player_vp_tokens[name])
+            scores[name] = self.player_score(name)
+
         ret = {
             'supply': self.supply.to_primitive_object(),
             'player_decks': self.player_decks.to_primitive_object(),

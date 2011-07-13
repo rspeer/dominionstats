@@ -15,11 +15,20 @@ function ScoreExtractor(player, game_state) {
   return game_state.scores[player];
 }
 
+var NOT_VALID_VALUE_SENTINEL = -101;
+
 function MoneyExtractor(player, game_state) {
   if (game_state.player == player) {
     return game_state.money;
   }
-  return -101;
+  return NOT_VALID_VALUE_SENTINEL;
+}
+
+function WinProbExtractor(player, game_state) {
+  if (game_state.player == player) {
+    return game_state.win_prob;
+  }
+  return NOT_VALID_VALUE_SENTINEL;
 }
 
 function MakeSeriesForPlayer(player_name, extractor) {
@@ -32,7 +41,7 @@ function MakeSeriesForPlayer(player_name, extractor) {
     var game_state = game.game_states[i];
     var turn = game_state.turn_no;
     var extracted = extractor(player_name, game_state);
-    if (extracted != -101) {
+    if (extracted != NOT_VALID_VALUE_SENTINEL) {
       if (turn >= output_per_turn_ct.length) output_per_turn_ct[turn] = 0;
       var offset = Math.min(output_per_turn_ct[turn], num_players - 1) /
                      num_players;
@@ -87,6 +96,8 @@ function DecorateGame() {
 
   $.plot($('#score-graph'), MakeSeriesForPlayers(ScoreExtractor), graph_opts);
   $.plot($('#money-graph'), MakeSeriesForPlayers(MoneyExtractor), graph_opts);
+  $.plot($('#win-prob-graph'),
+         MakeSeriesForPlayers(WinProbExtractor), graph_opts);
 
   $(window).scroll(UpdateDisplay);
 }

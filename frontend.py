@@ -14,6 +14,7 @@ import game
 import goals
 import query_matcher
 from name_merger import norm_name
+import annotate_game
 import parse_game
 from record_summary import RecordSummary
 import datetime
@@ -325,7 +326,7 @@ class GamePage(object):
         body_err_msg = ('<body><b>Error annotating game, tell ' 
                         'rrenaud@gmail.com!</b>')
         try:
-            return parse_game.annotate_game(contents, game_id, debug)
+            return annotate_game.annotate_game(contents, game_id, debug)
         except parse_game.BogusGameError, b:
             return contents.replace('<body>',
                                     body_err_msg + ': foo? ' + str(b))

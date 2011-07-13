@@ -11,19 +11,19 @@ def long_deck_composition_list(d):
         ret.append(d.get(card, 0))
     return ret
 
-def score_deck_extractor(deck_comp):
-    return game.score_deck(deck_comp)
+def score_deck_extractor(deck_comp, game_state, player):
+    return game_state.player_score(player)
 
-def deck_size_deck_extractor(deck_comp):
+def deck_size_deck_extractor(deck_comp, game_state, player):
     return sum(deck_comp.itervalues())
 
-def action_balance_deck_extractor(deck_comp):
+def action_balance_deck_extractor(deck_comp, game_state, player):
     ret = 0
     for card, quant in deck_comp.iteritems():
         ret += (ci.num_plus_actions(card) - ci.is_action(card)) * quant
     return ret / (sum(deck_comp.itervalues()) or 1)
 
-def unique_deck_extractor(deck_comp):
+def unique_deck_extractor(deck_comp, game_state, player):
     return len(deck_comp)
         
 def get_matching_names(suffix):
@@ -45,20 +45,20 @@ def turn_tiebreaker_common_extractor(g, game_state):
 
 def piles_empty_common_extractor(g, game_state):
     ret = 0
-    for card, quant in game_state.supply().iteritems():
+    for card, quant in game_state.supply.iteritems():
         if quant == 0:
             ret += 1
     return ret
 
 def piles_low_common_extractor(g, game_state):
     ret = 0
-    for card, quant in game_state.supply().iteritems():
+    for card, quant in game_state.supply.iteritems():
         if quant <= 2:
             ret += 1
     return ret
 
 def prov_or_colony_low_extractor(g, game_state):
-    for card, quant in game_state.supply().iteritems():
+    for card, quant in game_state.supply.iteritems():
         if (card == 'Province' or card == 'Colony') and 1 <= quant <= 2:
             return 1
     return 0
@@ -69,21 +69,23 @@ def turn_no_common_extractor(g, game_state):
 COMMON_FEATURE_NAMES = get_matching_names('common_extractor')
 COMMON_FEATURE_EXTRACTORS = get_matching_objects('common_extractor')
 
-def encode_state_r_fmt(g, game_state):
-    output_list = [g.get_id() + str(game_state.turn_index())]
+def encode_state_r_fmt(g, game_state, encode_id=True):
+    output_list = []
+    if encode_id:
+        output_list.append(g.get_id() + '#' + str(game_state.turn_label()))
     for common_extractor in COMMON_FEATURE_EXTRACTORS:
         output_list.append(common_extractor(g, game_state))
     
     for player_name in game_state.player_turn_order():
         deck_comp = game_state.get_deck_composition(player_name)
         for extractor in DECK_FEATURE_EXTRACTORS:
-            output_list.append(extractor(deck_comp))
+            output_list.append(extractor(deck_comp, game_state, player_name))
         output_list.extend(long_deck_composition_list(deck_comp))
     return output_list
 
-def encode_diff(orig_state):
+def encode_diff(orig_state, encode_id=True):
     ret = orig_state[:]
-    common_info_size = len(COMMON_FEATURE_EXTRACTORS) + 1
+    common_info_size = len(COMMON_FEATURE_EXTRACTORS) + encode_id
     num_features = (len(ret) - common_info_size) / 2
     for ind in range(common_info_size, common_info_size + num_features):
         ret[ind + num_features] -= ret[ind]
@@ -94,7 +96,7 @@ def output_state(state, output_file):
     output_file.write(formatted_str)
     output_file.write('\n')
 
-def write_header(output_file):
+def make_header():
     header = []
     header.extend(COMMON_FEATURE_NAMES)
     
@@ -104,7 +106,10 @@ def write_header(output_file):
         for card in ci.card_names():
             header.append(player_label + 
                           card.replace(' ', '_').replace("'", ''))
-    output_file.write(' '.join(header) + '\n')
+    return header
+
+def write_header(output_file):
+    output_file.write(' '.join(make_header(header)) + '\n')
 
 def main():
     c = utils.get_mongo_connection()
@@ -115,8 +120,9 @@ def main():
     write_header(output_file2)
     
     for raw_game in utils.progress_meter(
-        c.test.games.find({'_id': {'$gt': 'game-20110230'} }
-                          ).limit(1000),1000):
+        c.test.games.find(
+            #{'_id': {'$gt': 'game-20110230'} }
+                          ).limit(1000),100):
         g = game.Game(raw_game)
         if g.dubious_quality() or len(g.get_player_decks()) != 2:
             continue
