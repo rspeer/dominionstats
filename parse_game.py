@@ -284,7 +284,7 @@ def parse_header(header_str):
     return {'game_end': gone, 'supply': supply, 'resigned': resigned}
 
 PLACEMENT_RE = re.compile('#\d (.*)')
-POINTS_RE = re.compile(': (-*\d+) points(\s|(' + re.escape('</b>') + '))')
+POINTS_RE = re.compile(': (-*\d+) point(s?)(\s|(' + re.escape('</b>') + '))')
 
 def parse_deck(deck_str):
     """ Given an isotropic deck string, return a dictionary containing the
@@ -314,7 +314,7 @@ def parse_deck(deck_str):
                                 name_vp_list[point_loc + 1:])
     else:
         resign_loc = name_vp_list.find('resigned')
-        assert resign_loc != -1
+        assert resign_loc != -1, 'could not find resign in %s' % name_vp_list
         resigned, points = True, -100
         name_points, vp_list = (name_vp_list[:resign_loc],
                                 name_vp_list[resign_loc + 1:])
