@@ -65,21 +65,25 @@ class Turn(object):
 
     def turn_label(self, for_anchor=False, for_display=False):
         if 'outpost' in self.turn_dict:
-            fmt = '%(pname)s-%(show)soutpost-turn-%(turn_no)d'
+            fmt = u'%(pname)s-%(show)soutpost-turn-%(turn_no)d'
         elif self.poss_no:
-            fmt = '%(pname)s-%(show)sposs-turn-%(turn_no)d-%(poss_no)d'
+            fmt = u'%(pname)s-%(show)sposs-turn-%(turn_no)d-%(poss_no)d'
         else:
-            fmt = '%(pname)s-%(show)sturn-%(turn_no)d'
-        show = 'show-' if for_anchor else ''
+            fmt = u'%(pname)s-%(show)sturn-%(turn_no)d'
+        show = u'show-' if for_anchor else ''
 
         if for_display:
             fmt = fmt.replace('-', ' ')
 
-        return fmt % {
-            'pname': self.player.name(),
-            'turn_no': self.turn_no - int(not (for_anchor or for_display)),
-            'poss_no': self.poss_no,
-            'show': show}
+        ret = fmt % {
+            u'pname': self.player.name(),
+            u'turn_no': self.turn_no - int(not (for_anchor or for_display)),
+            u'poss_no': self.poss_no,
+            u'show': show}
+
+        if for_anchor:
+            ret = ret.replace(' ', '-')
+        return ret
 
     def money(self):
         return self.turn_dict.get('money', 0)
@@ -324,7 +328,7 @@ def score_deck(deck_comp):
     if 'Duke' in deck_comp:
         ret += deck_comp['Duke'] * deck_comp.get('Duchy', 0)
     if 'Fairgrounds' in deck_comp:
-        ret += len(deck_comp.keys()) / 5 * deck_comp['Fairgrounds']
+        ret += 2 * len(deck_comp.keys()) / 5 * deck_comp['Fairgrounds']
     if 'Vineyard' in deck_comp:
         ret += sum(deck_comp[card] if card_info.is_action(card) else 0
                    for card in deck_comp) / 3 * deck_comp['Vineyard']
