@@ -3,14 +3,13 @@ import simplejson as json
 
 import game
 import parse_game
-import rf_predict
-
+# import rf_predict
 
 def _pretty_format_html(v):
     return '<br>' + pprint.pformat(v).replace(
         '\n', '<br>').replace(' ', '&nbsp')
 
-win_predictor = rf_predict.WinPredictor()
+# win_predictor = rf_predict.WinPredictor()
 
 def annotate_game(contents, game_id, debug=False):
     """ Decorate game contents with some JS that makes a score keeper 
@@ -20,11 +19,12 @@ def annotate_game(contents, game_id, debug=False):
     states = []
     
     game_val = game.Game(parsed_game)
-    predictions = win_predictor.predict_all_turns(game_val)
-    for game_state, win_prob in itertools.izip(
-        game_val.game_state_iterator(), predictions):
+    # predictions = win_predictor.predict_all_turns(game_val)
+    for game_state in itertools.izip(
+        game_val.game_state_iterator(), #predictions
+        ):
         encoded = game_state.encode_game_state()
-        encoded['win_prob'] = win_prob
+        #encoded['win_prob'] = win_prob
         states.append(encoded)
 
     parsed_game['game_states'] = states
