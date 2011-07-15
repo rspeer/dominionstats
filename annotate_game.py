@@ -1,3 +1,6 @@
+""" Nicely render a game with deck composition viewer and some graphs of
+the game as it progresses."""
+
 import itertools
 import simplejson as json
 
