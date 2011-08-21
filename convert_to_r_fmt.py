@@ -148,13 +148,13 @@ def write_header(output_file):
 def main():
     c = utils.get_mongo_connection()
 
-    output_file = open('r_format_test.data', 'w')
+    output_file = open('r_format.data', 'w')
     write_header(output_file)
     
     for raw_game in utils.progress_meter(
         c.test.games.find(
             #{'_id': {'$gt': 'game-20110230'} }
-                          ).limit(1000),100):
+            ), 1000):
         g = game.Game(raw_game)
         if g.dubious_quality() or len(g.get_player_decks()) != 2:
             continue

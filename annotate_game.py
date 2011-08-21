@@ -23,9 +23,9 @@ def annotate_game(contents, game_id, debug=False):
     
     game_val = game.Game(parsed_game)
     # predictions = win_predictor.predict_all_turns(game_val)
-    for game_state in itertools.izip(
-        game_val.game_state_iterator(), #predictions
-        ):
+    for game_state in game_val.game_state_iterator():
+                      #itertools.izip(game_val.game_state_iterator(), 
+                      #   predictions):
         encoded = game_state.encode_game_state()
         #encoded['win_prob'] = win_prob
         states.append(encoded)
@@ -105,12 +105,12 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
     <td width=50px>money</td>
     <td><div id="money-graph" style="width:1000px;height:250px;"></div></td>
   </tr>
-  <tr>
-    <td width=50px>win prob</td>
-    <td><div id="win-prob-graph" style="width:1000px;height:250px;"></div></td>
-  </tr>
 </table>
 """
+  # <tr>
+  #   <td width=50px>win prob</td>
+  #   <td><div id="win-prob-graph" style="width:1000px;height:250px;"></div></td>
+  # </tr>
             ret += '</div>&nbsp<br>\n' * 10 
             ret += '</html>'
     return ret
