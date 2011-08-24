@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
 import pymongo
-import game
 import card_info
 import collections
-import name_merger
+import game
 import incremental_scanner
+import name_merger
+import utils
 
 # BOM: Bought only money and Victory.
 # BOMMinator: Won buying only money and Victory.
@@ -169,14 +170,19 @@ def main():
             checker_output[goal]
             goal_check_funcs.append((goal, globals()[name]))
 
+    parser = utils.incremental_max_parser()
+    args = parser.parse_args()
+
+    scanner = incremental_scanner.IncrementalScanner('goals', c.test)
+    if not args.incremental:
+        scanner.reset()
+        output_collection.remove()
     output_collection.ensure_index('attainers.player')
     output_collection.ensure_index('goal')
-    scanner = incremental_scanner.IncrementalScanner('goals', c.test)
+        
     print 'starting with id', scanner.get_max_game_id(), 'and num games', \
         scanner.get_num_games()
-    for idx, g in enumerate(scanner.scan(games_collection, {})):
-        if idx % 1000 == 0:
-            print idx
+    for g in utils.progress_meter(scanner.scan(games_collection, {})):
         total_checked += 1
         game_val = game.Game(g)
         for goal_name, goal_checker in goal_check_funcs:

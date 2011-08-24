@@ -82,7 +82,7 @@ def includes_day(args, str_yyyymmdd):
     assert len(str_yyyymmdd) == 8, '%s not 8 chars' % str_yyyymmdd
     return args.startdate <= str_yyyymmdd <= args.enddate 
 
-def progress_meter(iterable, chunksize):
+def progress_meter(iterable, chunksize=1000):
     """ Prints progress through iterable at chunksize intervals."""
     scan_start = time.time()
     since_last = time.time()
