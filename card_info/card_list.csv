@@ -58,8 +58,8 @@
 "Herbalist","Herbalists",2,0,0,1,0,0,0,0,0,0,0,1,1
 "Hoard","Hoards",6,0,0,0,1,0,0,0,0,0,0,2,0
 "Horn of Plenty","Horns of Plenty",5,0,0,0,1,0,0,0,0,0,0,0,0
-"Horse Traders","Horse Traders",4,0,-2,0,0,0,0,1,0,0,0,3,1
-"Hunting Party","Hunting Parties",5,1,2,0,0,0,0,0,0,0,0,0,0
+"Horse Traders","Horse Traders",4,0,-2,1,0,0,0,1,0,0,0,3,1
+"Hunting Party","Hunting Parties",5,1,2,1,0,0,0,0,0,0,0,0,0
 "Ironworks","Ironworks",4,0,0,1,0,0,0,0,0,0,0,1,0
 "Island","Islands",4,0,0,1,0,1,0,0,0,2,0,0,0
 "Jester","Jesters",5,0,0,1,0,0,1,0,0,0,0,2,0
