@@ -110,7 +110,7 @@ def CheckMatchOneTrickPony(g):
     return ret
 
 
-# buy 5 differently named Victory cards
+# buy 6 differently named Victory cards
 def CheckMatchMrGreenGenes(g):
     accumed_per_player = g.cards_accumalated_per_player()
     ret = []
@@ -227,7 +227,7 @@ def CheckMatchOnslaught(g):
 def CheckMatchMegaTurn(g):
     ret = []
     scores = []
-    if 'Colony'in g.get_supply():
+    if 'Colony' in g.get_supply():
         biggest_victory = 'Colony' 
     else: 
         biggest_victory = 'Province'
@@ -237,8 +237,8 @@ def CheckMatchMegaTurn(g):
         new_cards = turn.buys + turn.gains
         if len(new_cards) < victory_copies:
             continue
-        if new_cards.count(biggest_victory)==victory_copies:
-            ret.append({'player': turn.player.name(), 'reason': "Obtained all of the %s cards in one turn"%biggest_victory})
+        if new_cards.count(biggest_victory) == victory_copies:
+            ret.append({'player': turn.player.name(), 'reason': "Obtained all of the %s cards in one turn" % biggest_victory})
         
     return ret
 
@@ -247,8 +247,8 @@ def CheckMatchOscarTheGrouch(g):
     ret = []
     for turn in g.get_turns():
         trashes = len(turn.turn_dict.get('trashes',[]))
-        if trashes>=7:
-            ret.append({'player': turn.player.name(), 'reason': "Trashed %d cards in one turn"%trashes})
+        if trashes >= 7:
+            ret.append({'player': turn.player.name(), 'reason': "Trashed %d cards in one turn" % trashes})
     return ret
 
 
@@ -293,7 +293,7 @@ def MaybeRenderGoals(db, norm_target_player):
 
 def print_totals(checker_output, total):
     for goal_name, output in sorted(checker_output.iteritems(), key=lambda t: len(t[1]), reverse=True):
-        print "%-15s %8d %5.2f"%(goal_name, len(output), len(output)/float(total))
+        print "%-15s %8d %5.2f" % ( goal_name, len(output), len(output) / float(total) )
 
 def main():
     c = pymongo.Connection()
