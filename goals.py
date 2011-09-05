@@ -15,23 +15,6 @@ import operator
 # Salted Earth: Had a negative score.
 # PileDriver: Owned all copies of a card.
  
-# def CheckMatchGreenMonster(g):
-#     last_turn = g.Turns()[-1]
-#     if last_turn.Player().WinPoints() > 1:
-#         accumed = last_turn.PlayerAccumulates()
-#         big_vp_cards = 0
-#         total_vp_cards = 0
-        
-#         for card in accumed:
-#             card_vp = card_info.VPPerCard(card)
-#             if card_vp:
-#                 total_vp_cards += 1
-#                 if card_vp >= 6:
-#                     big_vp_cards += 1
-#             if big_vp_cards >= 3 and total_vp_cards >= 8:
-#                 return [last_turn.Player().name()]
-#     return []
-#FIXME: this is still a Work in Progress unfortunately
 def CheckMatchBOM(g):
     ret = []
     cards_per_player = g.cards_accumalated_per_player()
@@ -80,11 +63,11 @@ def CheckMatchGolfer(g):
 def CheckMatchPileDriver(g):
     accumed_per_player = g.cards_accumalated_per_player()
     ret = []
+    game_size = len(g.get_player_decks())
     for player, card_dict in accumed_per_player.iteritems():
         if g.get_player_deck(player).WinPoints() > 1.0:
             for card, quant in card_dict.iteritems():
-                if quant == card_info.num_copies_per_game(card,
-                                                       len(g.get_player_decks())):
+                if quant == card_info.num_copies_per_game(card, game_size):
                     ret.append(
                         {'player': player, 
                          'reason': 'Bought all %d copies of %s' % (
@@ -118,8 +101,11 @@ def CheckMatchMrGreenGenes(g):
         victory_quants = [(c, q) for c, q in card_dict.iteritems() if
                           card_info.is_victory(c)]
         if len(victory_quants) >= 6:
-            ret.append({'player': player,
-                        'reason': 'Bought %d differently named Victory cards'%len(victory_quants)})
+            ret.append({
+                    'player': player,
+                    'reason': 'Bought %d differently named Victory cards' % 
+                    len(victory_quants)}
+                       )
     return ret
 
 def CheckScore(g, low, high=None):
@@ -127,7 +113,8 @@ def CheckScore(g, low, high=None):
     for player in g.get_player_decks():
         score = player.points
         if score >= low and (high is None or score < high):
-            ret.append({'player': player.name(), 'reason': "Scored more than %d points"%low})
+            ret.append({'player': player.name(), 
+                        'reason': "Scored more than %d points" % low})
     return ret
 
 # Peer: Scored 60 points.
@@ -155,6 +142,14 @@ def CheckMatchImperial(g):
 def CheckMatchArchon(g):
     return CheckScore(g, 110)
 
+def GroupFuncs(funcs, group_name):
+    for idx, func in enumerate(funcs):
+        func.group = group_name
+        func.priority = idx
+    
+GroupFuncs([CheckMatchPeer, CheckMatchRegent, CheckMatchRoyalHeir, 
+            CheckMatchMonarch, CheckMatchImperial, CheckMatchArchon], 'vp')
+
 #("Buzzer Beater") Winning by exactly one point 
 def CheckMatchBuzzerBeater(g):
     scores = {}
@@ -163,7 +158,8 @@ def CheckMatchBuzzerBeater(g):
         scores[player.name()] = score
     s_scores = sorted(scores.iteritems(), key=operator.itemgetter(1), reverse=True)
     if len(s_scores)>1 and s_scores[0][1] == s_scores[1][1] + 1:
-        return [{'player': s_scores[0][0], 'reason': "Won by exactly one point"}]
+        return [{'player': s_scores[0][0], 
+                 'reason': "Won by exactly one point"}]
 
 # Bought more than 10 green cards in a turn
 # won without ever buying money
@@ -201,7 +197,10 @@ def CheckPointsPerTurn(g, low, high=None):
         for turn_no in range(i, len(scores)-1, len(players)):
             gain = scores[turn_no+1][i] - scores[turn_no][i]
             if gain >= low and (high is None or gain < high):
-                ret.append({'player': p, 'reason': "Scored %d or more points in one turn"%low})
+                ret.append({
+                        'player': p, 
+                        'reason': "Scored %d or more points in one turn" % 
+                        low})
     return ret
 
 #Slam: 20 or more points in one turn. 
@@ -212,16 +211,24 @@ def CheckPointsPerTurn(g, low, high=None):
 #Onslaught: 70 or more points in one turn.
 def CheckMatchSlam(g):
     return CheckPointsPerTurn(g, 20, 30)
+
 def CheckMatchCrash(g):
     return CheckPointsPerTurn(g, 30, 40)
+
 def CheckMatchCharge(g):
     return CheckPointsPerTurn(g, 40, 50)
+
 def CheckMatchKO(g):
     return CheckPointsPerTurn(g, 50, 60)
+
 def CheckMatchBlitz(g):
     return CheckPointsPerTurn(g, 60, 70)
+
 def CheckMatchOnslaught(g):
     return CheckPointsPerTurn(g, 70)
+
+GroupFuncs([CheckMatchSlam, CheckMatchCrash, CheckMatchCharge, CheckMatchKO,
+            CheckMatchBlitz, CheckMatchOnslaught], 'vp_turn')
 
 #Mega-Turn: you buy all the starting Provinces (or Colonies) in a single turn.
 def CheckMatchMegaTurn(g):
@@ -232,14 +239,17 @@ def CheckMatchMegaTurn(g):
     else: 
         biggest_victory = 'Province'
 
-    victory_copies = card_info.num_copies_per_game(biggest_victory, len(g.get_player_decks()))
+    victory_copies = card_info.num_copies_per_game(biggest_victory, 
+                                                   len(g.get_player_decks()))
     for turn in g.get_turns():
         new_cards = turn.buys + turn.gains
         if len(new_cards) < victory_copies:
             continue
         if new_cards.count(biggest_victory) == victory_copies:
-            ret.append({'player': turn.player.name(), 'reason': "Obtained all of the %s cards in one turn" % biggest_victory})
-        
+            ret.append(
+                {'player': turn.player.name(), 
+                 'reason': "Obtained all of the %s cards in one turn" % 
+                 biggest_victory})
     return ret
 
 #("Oscar The Grouch") Trash more than 7 cards in one turn 
@@ -248,18 +258,36 @@ def CheckMatchOscarTheGrouch(g):
     for turn in g.get_turns():
         trashes = len(turn.turn_dict.get('trashes',[]))
         if trashes >= 7:
-            ret.append({'player': turn.player.name(), 'reason': "Trashed %d cards in one turn" % trashes})
+            ret.append({'player': turn.player.name(), 
+                        'reason': "Trashed %d cards in one turn" % trashes})
     return ret
 
+goal_check_funcs = {}
+
+for name in dict(globals()):
+    if name.startswith('CheckMatch'):
+        goal = name[len('CheckMatch'):]
+        goal_func = globals()[name]
+        goal_check_funcs[goal] = goal_func
+        if not hasattr(goal_func, 'group'):
+            goal_func.group = 'ungrouped'
+            goal_func.priority = 0
 
 def MaybeRenderGoals(db, norm_target_player):
     goal_matches = list(db.goals.find(
             {'attainers.player': norm_target_player}).
                         sort('_id', pymongo.DESCENDING))
     ret = ''
+
     if goal_matches:
         goals_achieved_freq = collections.defaultdict(int)
         ret += '<h2>Goals achieved</h2>\n'
+
+        def GroupAndPriority(goal_match_doc):
+            func = goal_check_funcs[goal_match_doc['goal']]
+            return func.group, func.priority
+
+        goal_matches.sort(key = GroupAndPriority)
         
         for goal_match_doc in goal_matches:
             for attainer in goal_match_doc['attainers']:
@@ -292,8 +320,11 @@ def MaybeRenderGoals(db, norm_target_player):
     return ret
 
 def print_totals(checker_output, total):
-    for goal_name, output in sorted(checker_output.iteritems(), key=lambda t: len(t[1]), reverse=True):
-        print "%-15s %8d %5.2f" % ( goal_name, len(output), len(output) / float(total) )
+    for goal_name, output in sorted(checker_output.iteritems(), 
+                                    key=lambda t: len(t[1]), reverse=True):
+        print "%-15s %8d %5.2f" % (goal_name, len(output), 
+                                   len(output) / float(total))
+
 
 def main():
     c = pymongo.Connection()
@@ -301,14 +332,7 @@ def main():
     output_collection = c.test.goals
     total_checked = 0
 
-    goal_check_funcs = []
     checker_output = collections.defaultdict(list)
-    for name in globals():
-        if name.startswith('CheckMatch'):
-            goal = name[len('CheckMatch'):]
-            #FIXME: this is nonobvious
-            checker_output[goal]
-            goal_check_funcs.append((goal, globals()[name]))
 
     parser = utils.incremental_max_parser()
     args = parser.parse_args()
@@ -324,10 +348,8 @@ def main():
         scanner.get_num_games()
     for g in utils.progress_meter(scanner.scan(games_collection, {})):
         total_checked += 1
-#        if total_checked % 1000==0:
-#            print_totals(checker_output, total_checked)
         game_val = game.Game(g)
-        for goal_name, goal_checker in goal_check_funcs:
+        for goal_name, goal_checker in goal_check_funcs.iteritems():
             output = goal_checker(game_val)
             if output:
                 for attainer in output:
