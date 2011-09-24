@@ -6,13 +6,21 @@ import simplejson as json
 
 import game
 import parse_game
-# import rf_predict
+import sofia_predict
 
 def _pretty_format_html(v):
     return '<br>' + pprint.pformat(v).replace(
         '\n', '<br>').replace(' ', '&nbsp')
 
-# win_predictor = rf_predict.WinPredictor()
+win_predictor = sofia_predict.SofiaWinPredictor('data/logreg-peg.model')
+
+def make_graph(label, div_name):
+    return """
+  <tr>
+    <td width=50px>%s</td>
+    <td><div id="%s" style="width:1000px;height:250px;"></div></td>
+  </tr>
+""" % (label, div_name)
 
 def annotate_game(contents, game_id, debug=False):
     """ Decorate game contents with some JS that makes a score keeper 
@@ -22,12 +30,13 @@ def annotate_game(contents, game_id, debug=False):
     states = []
     
     game_val = game.Game(parsed_game)
-    # predictions = win_predictor.predict_all_turns(game_val)
-    for game_state in game_val.game_state_iterator():
-                      #itertools.izip(game_val.game_state_iterator(), 
-                      #   predictions):
+    win_prob_enabled = len(game_val.get_player_decks()) == 2
+    if win_prob_enabled:
+        predictions = win_predictor.predict_all_turns(game_val)
+
+    for idx, game_state in enumerate(game_val.game_state_iterator()):
         encoded = game_state.encode_game_state()
-        #encoded['win_prob'] = win_prob
+        encoded['win_prob'] = predictions[idx] if win_prob_enabled else 0
         states.append(encoded)
 
     parsed_game['game_states'] = states
@@ -94,23 +103,20 @@ bug</a> and tell rrenaud@gmail.com<br>''' % game_id
         else:            
             before_end = turn_chunk.find('</html')
             ret += turn_chunk[turn_chunk.find('\n'): before_end]
+            win_prob_graph = ''
+
+            if win_prob_enabled:
+                win_prob_graph = make_graph('win prob', 'win-prob-graph')
             ret += """
 <div id="end-game"></div>
 <table>
-  <tr>
-    <td width=50px>score</td>
-    <td><div id="score-graph" style="width:1000px;height:250px;"></div></td>
-  </tr>
-  <tr>
-    <td width=50px>money</td>
-    <td><div id="money-graph" style="width:1000px;height:250px;"></div></td>
-  </tr>
+  %s
+  %s
+  %s
 </table>
-"""
-  # <tr>
-  #   <td width=50px>win prob</td>
-  #   <td><div id="win-prob-graph" style="width:1000px;height:250px;"></div></td>
-  # </tr>
+""" % (make_graph('score', 'score-graph'), make_graph('money', 'money-graph'),
+       win_prob_graph)
+
             ret += '</div>&nbsp<br>\n' * 10 
             ret += '</html>'
     return ret

@@ -96,8 +96,11 @@ function DecorateGame() {
 
   $.plot($('#score-graph'), MakeSeriesForPlayers(ScoreExtractor), graph_opts);
   $.plot($('#money-graph'), MakeSeriesForPlayers(MoneyExtractor), graph_opts);
-  //$.plot($('#win-prob-graph'),
-  //       MakeSeriesForPlayers(WinProbExtractor), graph_opts);
+
+  graph_opts.yaxis.position = { max: 1.0 };
+
+  $.plot($('#win-prob-graph'),
+     MakeSeriesForPlayers(WinProbExtractor), graph_opts);
 
   $(window).scroll(UpdateDisplay);
 }

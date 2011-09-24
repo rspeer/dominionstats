@@ -16,10 +16,7 @@ class WinPredictor:
         encoded_states = []
         for game_state in game_val.game_state_iterator():
             encoded_state = (
-                convert_to_r_fmt.encode_state_r_fmt(game_val, game_state, 
-                                                    False))
-            encoded_states.append(convert_to_r_fmt.encode_diff(
-                    encoded_state, False))
+                convert_to_r_fmt.encode_state_r_fmt(game_val, game_state)
             
         # convert the data into this funny column vector format so that we
         # can turn it into a data frame.
