@@ -159,7 +159,7 @@ def main():
 
     force_classification = True
 
-    prefix = 'data/test_huge_'
+    prefix = 'data/test_small_'
     # limit = 10000
     r_output_file = open(prefix + 'r_format.data', 'w')
     weka_output_file = open(prefix + 'games.arff', 'w')
@@ -171,8 +171,8 @@ def main():
     
     for raw_game in utils.progress_meter(
         c.test.games.find(
-            {'_id': {'$gt': 'game-20110715'} }
-            ), 100):
+            {'_id': {'$gt': 'game-2010-10'} }
+            ).limit(20000), 100):
         g = game.Game(raw_game)
         if g.dubious_quality() or len(g.get_player_decks()) != 2:
             continue
