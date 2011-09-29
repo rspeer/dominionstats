@@ -163,7 +163,7 @@ def CheckMatchBuzzerBeater(g):
                  'reason': "Won by exactly one point"}]
 
 # Anticlimactic - shared a victory with two or more opponents
-def CheckAnticlimactic(g):
+def CheckMatchAnticlimactic(g):
     if len(g.get_player_decks()) < 3:
         return []
 
