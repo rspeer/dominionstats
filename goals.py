@@ -359,6 +359,9 @@ for name in dict(globals()):
             goal_func.group = 'ungrouped'
             goal_func.priority = 0
 
+def GetGoalImageFilename(goal_name):
+    return 'static/images/%s.png' % goal_name
+
 def MaybeRenderGoals(db, norm_target_player):
     goal_matches = list(db.goals.find(
             {'attainers.player': norm_target_player}).
@@ -393,7 +396,7 @@ def MaybeRenderGoals(db, norm_target_player):
                         if attainer.has_key('reason'):
                             reason = ' : ' + attainer['reason']
                         freq = goals_achieved_freq[goal_name]
-                        img_loc = 'static/images/%s.png' % goal_name
+                        img_loc = GetGoalImageFilename(goal_name)
                         ret += (
                             '<li style="float: left;">'
                             '%s<img src="%s" title="%s%s"></a><br>' %
@@ -410,6 +413,14 @@ def print_totals(checker_output, total):
                                     key=lambda t: len(t[1]), reverse=True):
         print "%-15s %8d %5.2f" % (goal_name, len(output),
                                    len(output) / float(total))
+
+def all_goals(game_val):
+    goals = {}
+    for goal_name, goal_checker in goal_check_funcs.iteritems():
+        output = goal_checker(game_val)
+        if output:
+            goals[goal_name] = output
+    return goals
 
 
 def main():
@@ -435,18 +446,16 @@ def main():
     for g in utils.progress_meter(scanner.scan(games_collection, {})):
         total_checked += 1
         game_val = game.Game(g)
-        for goal_name, goal_checker in goal_check_funcs.iteritems():
-            output = goal_checker(game_val)
-            if output:
-                for attainer in output:
-                    attainer['player'] = name_merger.norm_name(
-                        attainer['player'])
-                checker_output[goal_name].append(
-                    (game_val.isotropic_url(), output))
-                mongo_val = {'_id': game_val.get_id(),
-                             'goal': goal_name,
-                             'attainers': output}
-                output_collection.save(mongo_val)
+        for goal_name, output in all_goals(game_val).items():
+            for attainer in output:
+                attainer['player'] = name_merger.norm_name(
+                    attainer['player'])
+            checker_output[goal_name].append(
+                (game_val.isotropic_url(), output))
+            mongo_val = {'_id': game_val.get_id(),
+                         'goal': goal_name,
+                         'attainers': output}
+            output_collection.save(mongo_val)
 
     print 'ending with id', scanner.get_max_game_id(), 'and num games', \
         scanner.get_num_games()
