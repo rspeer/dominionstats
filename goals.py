@@ -164,19 +164,23 @@ def CheckMatchBuzzerBeater(g):
 
 # Anticlimactic - shared a victory with two or more opponents
 def CheckMatchAnticlimactic(g):
-    if len(g.get_player_decks()) < 3:
+    num_players = len(g.get_player_decks())
+
+    if num_players == 3:
+        max_score = 1.0
+    elif num_players == 4:
+        max_score = 4.0/3
+    else:
         return []
 
-    shared_score = None
-    for player in g.get_player_decks():
-        score = player.points
-        if shared_score == None:
-            shared_score = score
-        elif shared_score != score:
-            return []
     ret = []
     for player in g.get_player_decks():
-        ret.append( {'player': player.name(), 'reason': 'Shared a victory with two or more opponents'} )
+        wp = player.WinPoints()
+        if wp>max_score:
+            return ret
+        elif wp!=0.0:
+            ret.append( {'player': player.name(), 'reason': 'Shared a victory with two or more opponents'} )
+    print ret
     return ret
 
 
@@ -197,9 +201,9 @@ def CheckMatchCarny(g):
     for player, deck in g.cards_accumalated_per_player().iteritems():
         if 'Fairgrounds' not in deck:
             continue
-        fg_pts = 2 * len(deck.keys()) / 5 * deck['Fairgrounds']
+        fg_pts = game.score_fairgrounds(deck)
         if fg_pts >= 30:
-            ret.append( {'player': player, 'reason': '%d VP from Fairgrounds'%fg_pts} )
+            ret.append( {'player': player, 'reason': '%d VP from Fairgrounds' % fg_pts} )
     return ret
 
 
@@ -210,10 +214,9 @@ def CheckMatchGardener(g):
     for player, deck in g.cards_accumalated_per_player().iteritems():
         if 'Gardens' not in deck:
             continue
-        deck_size = sum(deck.itervalues())
-        g_pts = deck_size / 10 * deck['Gardens']
+        g_pts = game.score_gardens(deck)
         if g_pts >= 20:
-            ret.append( {'player': player, 'reason': '%d VP from Gardens'%g_pts} )
+            ret.append( {'player': player, 'reason': '%d VP from Gardens' % g_pts} )
 
     return ret
 
@@ -224,11 +227,11 @@ def CheckMatchDukeOfEarl(g):
     for player, deck in g.cards_accumalated_per_player().iteritems():
         if 'Duke' not in deck:
             continue
-        duke_pts = deck['Duke'] * deck.get('Duchy', 0)
+        duke_pts = game.score_duke(deck)
         duchy_pts = deck['Duchy'] * 5
         d_pts = duke_pts + duchy_pts
         if d_pts >= 42:
-            ret.append( {'player': player, 'reason': '%d VP from Dukes and Duchies'%d_pts} )
+            ret.append( {'player': player, 'reason': '%d VP from Dukes and Duchies' % d_pts} )
     return ret
 
 # == Use of one card in a turn
