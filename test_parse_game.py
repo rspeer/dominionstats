@@ -183,6 +183,33 @@ DEF_NAME_LIST)
         self.assertEquals(turn_info['opp']['p3']['trashes'], ['Copper'])
         self.assertEquals(turn_info['money'], 1)
 
+    def test_trader_gain_silver_instead_of_buy(self):
+        turn_info = parse_game.parse_turn(
+u"""--- player1's turn 8 ---
+   player1 plays a <span class=card-duration>Lighthouse</span>.
+   ... getting +1 action and +$1.
+   player1 plays 3 <span class=card-treasure>Coppers</span>.
+   player1 buys a <span class=card-victory>Gardens</span>.
+   ... player1 reveals a <span class=card-reaction>Trader</span> to gain a <span class=card-treasure>Silver</span> instead.
+   ... player1 gains a <span class=card-treasure>Silver</span>.,.
+""", 
+DEF_NAME_LIST)
+        self.assertEquals(turn_info['gains'], ['Silver'])
+        self.assertFalse('buys' in turn_info, 'should not be here: ' + 
+                         str(turn_info.get('buys', [])))
+
+    def test_trader_gain_silver_instead_of_gain(self):
+        turn_info = parse_game.parse_turn(
+u"""--- player1's turn 11 ---</a> 
+   player1 plays a <span class=card-none>Torturer</span>.
+   ... drawing 3 cards.
+   ... player2 gains a <span class=card-curse>Curse</span> in hand.
+   ... ... player2 reveals a <span class=card-reaction>Trader</span> to gain a <span class=card-treasure>Silver</span> instead.
+   ... ... player2 gains a <span class=card-treasure>Silver</span>.
+   player1 plays 2 <span class=card-treasure>Silvers</span> and a <span class=card-treasure>Copper</span>.
+   player1 buys an <span class=card-none>Upgrade</span>.""", DEF_NAME_LIST)
+        self.assertEquals(turn_info['opp']['p2']['gains'], ['Silver'])
+
     def test_mine_upgrade_turn(self):
         turn_info = parse_game.parse_turn(u"""--- player3's turn 12 ---
 player3 plays a <span class=card-none>Mine</span>.
@@ -302,6 +329,7 @@ player1 plays a <span class=card-none>Trading Post</span>.
       <span class=logonly>(player1 draws: 2 <span class=card-curse>Curses</span>, a <span class=card-treasure>Copper</span>, a <span class=card-none>Trading Post</span>, and a <span class=card-none>Laboratory</span>.)</span>""", 
 DEF_NAME_LIST)
         self.assertEquals(turn_info['trashes'], ['Copper', 'Estate'])
+        self.assertEquals(turn_info['gains'], ['Silver'])
         self.assertEquals(turn_info['money'], 3)
 
     def test_sea_hag_turn(self):
@@ -489,6 +517,41 @@ player0 buys a <span class=card-duration>Lighthouse</span>.
     ... ... ... revealing a <span class=card-reaction>Watchtower</span> and trashing the <span class=card-treasure>Copper</span>.""", DEF_NAME_LIST)
         self.assertEquals(turn_info['opp']['p1']['trashes'],
                           ['Curse', 'Copper'], turn_info)
+
+    def test_mountebank_traders_turn(self):
+        turn_info = parse_game.parse_turn(
+u"""--- player1's turn 6 ---
+player1 plays a <span class=card-none>Mountebank</span>.
+... getting +$2.
+... player2 gains a <span class=card-curse>Curse</span> and a <span class=card-treasure>Copper</span>.
+... ... player2 reveals a <span class=card-reaction>Trader</span> to gain a <span class=card-treasure>Silver</span> instead.
+... ... player2 gains a <span class=card-treasure>Silver</span>.
+... ... player2 reveals a <span class=card-reaction>Trader</span> to gain a <span class=card-treasure>Silver</span> instead.
+... ... player2 gains a <span class=card-treasure>Silver</span>.
+player1 plays 2 <span class=card-treasure>Silvers</span> and 2 <span class=card-treasure>Coppers</span>.
+player1 buys a <span class=card-treasure>Bank</span>.""", DEF_NAME_LIST)
+        self.assertEquals(turn_info['opp']['p2']['gains'], 
+                          ['Silver', 'Silver'], turn_info)
+
+    def test_mountebank_traders_turn2(self):
+        # this test is broken because it's an unfixed bug.
+        turn_info = parse_game.parse_turn(
+u"""--- player1's turn 12 ---</a> 
+   player1 plays a <span class=card-none>Mountebank</span>.
+   ... getting +$2.
+   ... player2 gains a <span class=card-curse>Curse</span> and a <span class=card-treasure>Copper</span>.
+   ... ... player2 reveals a <span class=card-reaction>Trader</span> to gain a <span class=card-treasure>Silver</span> instead.
+   ... ... player2 gains a <span class=card-treasure>Silver</span>.
+   ... ... ... player2 reveals a <span class=card-reaction>Trader</span> to gain a <span class=card-treasure>Silver</span> instead.
+   ... ... ... player2 gains a <span class=card-treasure>Silver</span>.""",
+DEF_NAME_LIST)
+        # p2 only turned the curse gain into a silver, but then just
+        # repeatedly spammed that silver -> silver, never cancelled the
+        # copper though.
+        # TODO: fix it if you want an adventure?
+        #self.assertEquals(turn_info['opp']['p2']['gains'],
+        #                  ['Copper', 'Silver'], turn_info['opp']['p2'])
+        
 
     def test_watchtower_buy_curse_turn(self):
         turn_info = parse_game.parse_turn(u"""--- player0's turn 11 ---

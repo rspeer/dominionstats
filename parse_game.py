@@ -63,6 +63,8 @@ KW_TRASHING = ' trashing '
 KW_TURNS_UP_A = ' turns up a'
 KW_WHICH_IS_WORTH = ' which is worth +$'
 KW_WITH_A = ' with a'
+KW_WISHING = ' wishing '
+KW_INSTEAD = ' instead.'
 KEYWORDS = [locals()[w] for w in dict(locals()) if w.startswith('KW_')]
 
 class BogusGameError(Exception):
@@ -529,16 +531,17 @@ def parse_turn(turn_blob, names_list):
     if 'outpost' in parsed_header:
         outpost = True
 
-    ret = {'gains': [], 'trashes': []}
+    ret = {'gains': [], 'trashes': [], 'buys': []}
     plays = []
-    buys = []
     returns = []
     turn_money = 0
     vp_tokens = 0
     ps_tokens = 0
     opp_turn_info = collections.defaultdict(lambda: {'gains': [],
-                                                     'trashes': []})
+                                                     'trashes': [],
+                                                     'buys': []})
     tracker = PlayerTracker()
+    
     for line_idx, line in enumerate(lines):
         active_player = tracker.get_active_player(line)
         if active_player == tracker.current_player():
@@ -549,6 +552,10 @@ def parse_turn(turn_blob, names_list):
         has_trashing = KW_TRASHING in line
         has_trashes = KW_TRASHES in line
         has_gaining = KW_GAINING in line
+        orig_buys_len = len(targ_obj.get('buys', []))
+        orig_gains_len = len(targ_obj.get('gains', []))
+
+        did_trading_post_gain = False
 
         if has_trashes:
             if has_gaining:
@@ -556,15 +563,16 @@ def parse_turn(turn_blob, names_list):
                 gain_start = line.find(KW_GAINING)
                 targ_obj['trashes'].extend(capture_cards(line[:gain_start]))
                 targ_obj['gains'].extend(capture_cards(line[gain_start:]))
-                continue
-            targ_obj['trashes'].extend(capture_cards(line))
+                did_trading_post_gain = True
+            else:
+                targ_obj['trashes'].extend(capture_cards(line))
         if KW_WITH_A in line:
             if KW_REPLACING in line:
                 new_gained_portion = line[line.find(KW_WITH_A):]
                 targ_obj['gains'].extend(capture_cards(new_gained_portion))
         if KW_PLAYS in line or KW_PLAYING in line: 
             plays.extend(capture_cards(line))
-        if has_gaining:
+        if has_gaining and not did_trading_post_gain:
             if KW_ANOTHER_ONE in line: # mints a gold gaining another one
                 targ_obj['gains'].extend(capture_cards(line))
             else:
@@ -572,7 +580,7 @@ def parse_turn(turn_blob, names_list):
                 targ_obj['gains'].extend( 
                     capture_cards(line[line.find(KW_GAINING):])) 
         if KW_BUYS in line: 
-            buys.extend(capture_cards(line))
+            targ_obj['buys'].extend(capture_cards(line))
         if KW_GAINS_THE in line:
             targ_obj['gains'].extend(capture_cards(line))
         if has_trashing: 
@@ -622,24 +630,51 @@ def parse_turn(turn_blob, names_list):
             turn_money += int(worth_match.group(1))
         if u'▼' in line:
             vp_tokens += int(VP_TOKEN_RE.search(line).group('num'))
-            
-    if poss:
-        def _delete_if_exists(d, n):
-            if n in d:
-                del d[n]
+        if KW_INSTEAD in line and not KW_WISHING in line:
+            assert 'buy_or_gain' in targ_obj, \
+                "line %s: line\n, targ_obj: %s\n context: %s" % (
+                line, str(targ_obj), 
+                '\n'.join(lines[line_idx - 2: line_idx + 2]))
+            targ_list = targ_obj[targ_obj['buy_or_gain']]
+            non_silver_ind = len(targ_list) - 1
+            while (non_silver_ind >= 0 and 
+                   targ_list[non_silver_ind] == 'Silver'):
+                non_silver_ind -= 1
+            # This shouldn't work when there is no non-silver, but then 
+            # non_silver_ind == -1 if there is no non-silver, which magically
+            # pops the last item.  <3 guido.
+            targ_list.pop(non_silver_ind)
 
+        now_buys_len = len(targ_obj.get('buys', []))
+        now_gains_len = len(targ_obj.get('gains', []))
+        if now_buys_len > orig_buys_len:
+            targ_obj['buy_or_gain'] = 'buys'
+        if now_gains_len > orig_gains_len:
+            targ_obj['buy_or_gain'] = 'gains'
+
+        assert not (now_buys_len > orig_buys_len and
+                    now_gains_len > orig_gains_len)
+
+    def _delete_if_exists(d, n):
+        if n in d:
+            del d[n]
+
+    _delete_if_exists(ret, 'buy_or_gain')
+
+    if poss:
         possessee_info = opp_turn_info[possessee_name]
         for k in ['gains', 'trashes']:
             _delete_if_exists(possessee_info, k)
 
         possessee_info['vp_token'], vp_tokens = vp_tokens, 0
         possessee_info['returns'], returns = returns, []
-        buys = []  # buys handled by possesion gain line.
+        ret['buys'] = []  # buys handled by possesion gain line.
 
     for opp in opp_turn_info.keys():
+        _delete_if_exists(opp_turn_info[opp], 'buy_or_gain')
         delete_keys_with_empty_vals(opp_turn_info[opp])
     ret.update({'name': names_list[tracker.current_player()], 
-                'plays': plays , 'buys': buys, 'returns': returns,
+                'plays': plays , 'returns': returns,
                 'money': count_money(plays) + turn_money,
                 'vp_tokens': vp_tokens, 'ps_tokens': ps_tokens,
                 'poss': poss, 'outpost': outpost, 
@@ -771,6 +806,8 @@ def check_game_sanity(game_val, output):
 
     supply = game_val.get_supply()
     if set(supply).intersection(['Masquerade', 'Black Market']):
+        return True
+    if set(['Mountebank', 'Trader']).issubset(supply):
         return True
 
     # TODO: add score sanity checking here
