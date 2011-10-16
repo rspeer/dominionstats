@@ -584,6 +584,8 @@ def parse_turn(turn_blob, names_list):
         if KW_GAINS_THE in line:
             targ_obj['gains'].extend(capture_cards(line))
         if has_trashing: 
+            if KW_REVEALS in lines[line_idx - 1]:
+                targ_obj['trashes'].extend(capture_cards(lines[line_idx - 1]))
             if KW_REVEALING in line:  # reveals watchtower trashing ...
                 trashed = capture_cards(line[line.find(KW_TRASHING):])
                 targ_obj['trashes'].extend(trashed)

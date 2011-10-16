@@ -582,6 +582,17 @@ DEF_NAME_LIST)
       ... revealing a <span class=card-victory>Province</span> and gaining a <span class=card-treasure>Gold</span> in hand.""", DEF_NAME_LIST)
         self.assertEquals(turn_info['gains'], ['Gold'])
 
+    def test_fools_gold_reveal_turn(self):
+        turn_info = parse_game.parse_turn(
+u""" --- player1's turn 10 ---
+player1 buys a <span class=card-victory>Province</span>.
+   ... player2 reveals a <span class=card-treasure-reaction>Fool's Gold</span>.
+   ... ... trashing it.
+   ... ... gaining a <span class=card-treasure>Gold</span> on the deck.""",
+DEF_NAME_LIST)
+        self.assertEquals(turn_info['opp']['p2']['trashes'], ["Fool's Gold"])
+        self.assertEquals(turn_info['opp']['p2']['gains'], ["Gold"])
+
     def test_saboteur_turn(self):
         turn_info = parse_game.parse_turn(u"""--- player2's turn 7 ---
 player2 plays an <span class=card-none>Ironworks</span>.
