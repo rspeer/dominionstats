@@ -43,6 +43,7 @@ KW_BUYS = ' buys '
 KW_DISCARDS = ' discards '
 KW_GAINING = ' gaining ' 
 KW_GAINS_A = ' gains a'
+KW_GAMES_A = ' games a'  # short lived bug in iso, spelled gains as games
 KW_GAINS_THE = ' gains the '
 KW_GET = 'get +'
 KW_GETS = ' gets +'
@@ -182,7 +183,7 @@ def validate_names(decks):
             raise BogusGameError('Duplicate name %s' % name)
         used_names.add(name)
 
-        if name in ['a', 'and']:
+        if name in ['a', 'and', 'turn']:
             raise BogusGameError("annoying name " + name)
         if '---' in name:
             raise BogusGameError('--- in name ' + name)
@@ -594,12 +595,12 @@ def parse_turn(turn_blob, names_list):
                 if KW_GAINING in line:
                     rest = line[:line.find(KW_GAINING)]
                 targ_obj['trashes'].extend(capture_cards(rest))
-        if KW_GAINS_A in line:
+        if KW_GAINS_A in line or KW_GAMES_A in line:
             if KW_TOKEN in line:
                 assert 'Pirate Ship' in capture_cards(line)
                 ps_tokens += 1
             else:
-                rest = line[line.find(KW_GAINS_A):]
+                rest = line[max(line.find(KW_GAINS_A), line.find(KW_GAMES_A)):]
                 targ_obj['gains'].extend(capture_cards(rest))
         if KW_IS_TRASHED in line:
             # Saboteur after revealing cards, name not mentioned on this line.
@@ -719,7 +720,7 @@ def outer_parse_game(filename):
         # print 'skipped', filename, 'because', bogus_game_exception.reason
         return None
     except ParseTurnHeaderError, p:
-        print 'parse turn header error', p
+        print 'parse turn header error', p, filename
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def segments(lis, chunk_size):
