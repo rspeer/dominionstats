@@ -408,10 +408,10 @@ function toggle(item) {
                         freq = goals_achieved_freq[goal_name]
                         ret += '<li><span onclick="javascript:toggle(\'%s\');" style="cursor:pointer">'%goal_name
                         ret += '<img src="%s" title="%s"  style="vertical-align: middle">' % (img, goal_name)
-                        ret += '<span class="goal_name">%s</span>'%goal_name
+                        ret += '<span class="goal_name">%s</span>' % goal_name
                         ret += '<span class="goal_name">x%d</span>' % (freq)
                         ret += '</span>'
-                        ret += '<div id="%s" class="goal_list"><br>'%goal_name
+                        ret += '<div id="%s" class="goal_list"><br>' % goal_name
                         seen_goal_yet.add(goal_name)
 
                     game_id = goal_match_doc['_id']
@@ -421,8 +421,8 @@ function toggle(item) {
                     reason = attainer.get('reason', '')
 
                     ret += '<table class="goal_box cardborder blue">'
-                    ret += '<td>%s<img src="%s" title="%s" width="50px"></a>'%(link, img, goal_name)
-                    ret += '<td width="100px"><span class="goal_description">%s</span><br><span class="goal_date">%s</span>'%(reason, date)
+                    ret += '<td>%s<img src="%s" title="%s" width="50px"></a>' % (link, img, goal_name)
+                    ret += '<td width="100px"><span class="goal_description">%s</span><br><span class="goal_date">%s</span>' % (reason, date)
                     ret += '</table>'
 
         ret += '</div>'
