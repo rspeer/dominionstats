@@ -223,10 +223,14 @@ class Game(object):
         yyyymmdd_date = game_id.split('-')[1]
         return yyyymmdd_date
 
-    def date(self):
+    @staticmethod
+    def get_datetime_from_id(game_id):
         from datetime import datetime
 
-        return datetime.strptime(Game.get_date_from_id(self.id), "%Y%m%d")
+        return datetime.strptime(Game.get_date_from_id(game_id), "%Y%m%d")
+
+    def date(self):
+        return Game.get_datetime_from_id(self.id)
 
     def get_id(self):
         return self.id

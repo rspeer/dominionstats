@@ -181,6 +181,7 @@ def standard_heading(title):
     <link href='static/css/mystyles.css' rel='stylesheet' type='text/css'>
     <link href='http://fonts.googleapis.com/css?family=IM+Fell+DW+Pica' 
 	  rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Terminal+Dosis' rel='stylesheet' type='text/css'>
   </head>
   <body>
     <a href="http://councilroom.com"><h1>CouncilRoom.com</h1></a>""" % title
@@ -268,7 +269,7 @@ class PlayerPage(object):
                """
 
         if len(aliases) > 1:
-            ret += 'Aliases: ' + ', '.join(aliases) + '<br>\n'
+            ret += '<h2>Aliases: ' + ', '.join(aliases) + '</h2>\n'
 
 
         ret += render_record_table('Record by game size', overall_record,
