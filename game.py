@@ -241,8 +241,8 @@ class Game(object):
         return 'http://dominion.isotropic.org/gamelog/%s' % path
 
     @staticmethod
-    def get_councilroom_link_from_id(game_id):
-        return '<a href="/game?game_id=%s">' % game_id
+    def get_councilroom_link_from_id(game_id, extra=''):
+        return '<a href="/game?game_id=%s"%s>' % (game_id, extra)
 
     def get_councilroom_open_link(self):
         return self.get_councilroom_link_from_id(self.id)

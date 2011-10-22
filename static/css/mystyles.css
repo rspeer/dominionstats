@@ -109,8 +109,7 @@ h2.reaction {
 }
 
 .goal_name {
-	font-size: 25px;
-	font-family: 'IM Fell DW Pica', serif;
+	font-size: 22px;
 	font-weight: 700;
 	margin: 0px 0px 0px 20px;
 }
@@ -135,3 +134,9 @@ letter-spacing:-1px;
 font-family: 'Terminal Dosis', sans-serif;
 	font-variant:small-caps;
 }
+
+a.goal:link, a.goal:visited{
+	text-decoration:none;
+	color: black;
+}
+

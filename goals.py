@@ -402,7 +402,7 @@ function toggle(item) {
                     goal_name = goal_match_doc['goal']
                     img = GetGoalImageFilename(goal_name)
                     if goal_name not in seen_goal_yet:
-                        if len(seen_goal_yet)>0:
+                        if len(seen_goal_yet) > 0:
                             ret += "</div>"
                             ret += '<div style="clear: both;">&nbsp;</div>'
                         freq = goals_achieved_freq[goal_name]
@@ -415,16 +415,18 @@ function toggle(item) {
                         seen_goal_yet.add(goal_name)
 
                     game_id = goal_match_doc['_id']
-                    link = game.Game.get_councilroom_link_from_id(game_id)
+                    link = game.Game.get_councilroom_link_from_id(game_id, ' class="goal"')
                     date = game.Game.get_datetime_from_id(game_id).strftime("%d %b %Y")
                     
                     reason = attainer.get('reason', '')
 
                     ret += '<table class="goal_box cardborder blue">'
                     ret += '<td>%s<img src="%s" title="%s" width="50px"></a>' % (link, img, goal_name)
-                    ret += '<td width="100px"><span class="goal_description">%s</span><br><span class="goal_date">%s</span>' % (reason, date)
+                    ret += '<td width="100px">%s' % link
+                    ret += '<span class="goal_description">%s</span><br>' % reason
+                    ret += '<span class="goal_date">%s</span></a>' % date
                     ret += '</table>'
-
+                        
         ret += '</div>'
         ret += '</ul>'
         ret += '<div style="clear: both;">&nbsp;</div>'

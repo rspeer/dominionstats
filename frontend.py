@@ -269,7 +269,7 @@ class PlayerPage(object):
                """
 
         if len(aliases) > 1:
-            ret += '<h2>Aliases: ' + ', '.join(aliases) + '</h2>\n'
+            ret += 'Aliases: ' + ', '.join(aliases) + '\n'
 
 
         ret += render_record_table('Record by game size', overall_record,
