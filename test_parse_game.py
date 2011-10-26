@@ -370,6 +370,30 @@ player8 plays 2 <span class=card-treasure>Coppers</span>.
         self.assertTrue('trashes' not in turn_info)
         self.assertEquals(turn_info['ps_tokens'], 1)
 
+    def test_noble_brigand_trash(self):
+        turn_info = parse_game.parse_turn(
+"""--- player1's turn 10 ---
+   player1 plays a <span class=card-none>Noble Brigand</span>.
+   ... getting +$1.
+   ... player2 draws and reveals a <span class=card-none>Ghost Ship</span> and a <span class=card-treasure>Silver</span>, trashing a <span class=card-treasure>Silver</span>.
+   ... player2 discards a <span class=card-none>Ghost Ship</span>.
+   ... player1 gains the <span class=card-treasure>Silver</span>.""", 
+DEF_NAME_LIST)
+        self.assertEquals(turn_info['opp']['p2']['trashes'], ['Silver'])
+
+    def test_noble_brigand_3_p_trash(self):
+        turn_info = parse_game.parse_turn(
+"""--- player1's turn 9 ---
+      player1 plays a <span class=card-none>Noble Brigand</span>.
+      ... getting +$1.
+      ... player2 reveals and discards a <span class=card-treasure>Copper</span> and a <span class=card-none>Warehouse</span>.
+      ... player3 draws and reveals a <span class=card-treasure>Copper</span> and a <span class=card-treasure>Gold</span>, trashing a <span class=card-treasure>Gold</span>.
+      ... player3 discards a <span class=card-treasure>Copper</span>.
+      ... player1 gains the <span class=card-treasure>Gold</span>.""",
+DEF_NAME_LIST)
+        self.assertEquals(turn_info['opp']['p3']['trashes'], ['Gold'])
+
+
     def test_bank_turn(self):
         turn_info = parse_game.parse_turn(u"""
 --- player2's turn 10 ---
@@ -551,7 +575,13 @@ DEF_NAME_LIST)
         # TODO: fix it if you want an adventure?
         #self.assertEquals(turn_info['opp']['p2']['gains'],
         #                  ['Copper', 'Silver'], turn_info['opp']['p2'])
-        
+        # similiar bug in 
+        # http://councilroom.com/game?game_id=game-20111017-112224-14cd96f7.html&debug=1#Mick_Swagger-show-turn-8
+        # with develop/trader interaction.
+
+        # similiar bug in
+        # councilroom.com/game?game_id=game-20111017-111832-61528d54.html&debug=1#ChickenSedan-show-turn-13
+        # with trader/multiple hoard interaction.
 
     def test_watchtower_buy_curse_turn(self):
         turn_info = parse_game.parse_turn(u"""--- player0's turn 11 ---

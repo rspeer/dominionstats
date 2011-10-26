@@ -42,6 +42,7 @@ KW_ANOTHER_ONE = 'another one'
 KW_BUYS = ' buys '
 KW_DISCARDS = ' discards '
 KW_GAINING = ' gaining ' 
+KW_DRAWS = ' draws '
 KW_GAINS_A = ' gains a'
 KW_GAMES_A = ' games a'  # short lived bug in iso, spelled gains as games
 KW_GAINS_THE = ' gains the '
@@ -564,7 +565,7 @@ def parse_turn(turn_blob, names_list):
                 gain_start = line.find(KW_GAINING)
                 targ_obj['trashes'].extend(capture_cards(line[:gain_start]))
                 targ_obj['gains'].extend(capture_cards(line[gain_start:]))
-                did_trading_post_gain = True
+                did_trading_post_gain = True                
             else:
                 targ_obj['trashes'].extend(capture_cards(line))
         if KW_WITH_A in line:
@@ -585,9 +586,11 @@ def parse_turn(turn_blob, names_list):
         if KW_GAINS_THE in line:
             targ_obj['gains'].extend(capture_cards(line))
         if has_trashing: 
-            if KW_REVEALS in lines[line_idx - 1]:
+            if KW_REVEALS in lines[line_idx - 1] and not KW_DRAWS in line:
                 targ_obj['trashes'].extend(capture_cards(lines[line_idx - 1]))
-            if KW_REVEALING in line:  # reveals watchtower trashing ...
+            if KW_REVEALING in line or KW_REVEALS in line:  
+                # reveals watchtower trashing ...
+                # noble brigand reveals xx, yy and treashes yy
                 trashed = capture_cards(line[line.find(KW_TRASHING):])
                 targ_obj['trashes'].extend(trashed)
             else:
@@ -633,20 +636,22 @@ def parse_turn(turn_blob, names_list):
             turn_money += int(worth_match.group(1))
         if u'▼' in line:
             vp_tokens += int(VP_TOKEN_RE.search(line).group('num'))
-        if KW_INSTEAD in line and not KW_WISHING in line:
-            assert 'buy_or_gain' in targ_obj, \
-                "line %s: line\n, targ_obj: %s\n context: %s" % (
-                line, str(targ_obj), 
-                '\n'.join(lines[line_idx - 2: line_idx + 2]))
-            targ_list = targ_obj[targ_obj['buy_or_gain']]
-            non_silver_ind = len(targ_list) - 1
-            while (non_silver_ind >= 0 and 
-                   targ_list[non_silver_ind] == 'Silver'):
-                non_silver_ind -= 1
-            # This shouldn't work when there is no non-silver, but then 
-            # non_silver_ind == -1 if there is no non-silver, which magically
-            # pops the last item.  <3 guido.
-            targ_list.pop(non_silver_ind)
+        if KW_INSTEAD in line and not KW_WISHING in line and 'Trader' in line:
+            if 'buy_or_gain' in targ_obj:
+                targ_list = targ_obj[targ_obj['buy_or_gain']]
+                non_silver_ind = len(targ_list) - 1
+                while (non_silver_ind >= 0 and 
+                       targ_list[non_silver_ind] == 'Silver'):
+                    non_silver_ind -= 1
+                # This shouldn't work when there is no non-silver, but then 
+                # non_silver_ind == -1 if there is no non-silver, 
+                # which magically pops the last item.  <3 guido.
+                targ_list.pop(non_silver_ind)
+            else:
+                assert 'Ill-Gotten Gains' in plays, (
+                    "line %s: line\n, targ_obj: %s\n context: %s" % (
+                        line, str(targ_obj), 
+                        '\n'.join(lines[line_idx - 2: line_idx + 2])))
 
         now_buys_len = len(targ_obj.get('buys', []))
         now_gains_len = len(targ_obj.get('gains', []))
@@ -721,6 +726,9 @@ def outer_parse_game(filename):
         return None
     except ParseTurnHeaderError, p:
         print 'parse turn header error', p, filename
+    except AssertionError, e:
+        print filename
+        raise e
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def segments(lis, chunk_size):
@@ -756,10 +764,9 @@ def convert_to_json(year_month_day, games_to_parse = None):
     else:
         print len(games_to_parse), 'games to parse in', year_month_day
 
-    # games_to_parse = games_to_parse[:10]
+    #games_to_parse = games_to_parse[:5000]
     pool = multiprocessing.Pool()
     parsed_games = pool.map(outer_parse_game, games_to_parse, chunksize=50)
-
     #parsed_games = map(outer_parse_game, games_to_parse)
     print year_month_day, 'before filtering', len(parsed_games)
     parsed_games = [x for x in parsed_games if x]
@@ -808,9 +815,8 @@ def check_game_sanity(game_val, output):
     simulating deck interactions saved in game val."""
 
     supply = game_val.get_supply()
-    if set(supply).intersection(['Masquerade', 'Black Market']):
-        return True
-    if set(['Mountebank', 'Trader']).issubset(supply):
+    # ignore known bugs.
+    if set(supply).intersection(['Masquerade', 'Black Market', 'Trader']):
         return True
 
     # TODO: add score sanity checking here
