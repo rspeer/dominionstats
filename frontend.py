@@ -258,7 +258,7 @@ class PlayerPage(object):
         #TODO: a good choice for a template like jinja2
 	ret = standard_heading("CouncilRoom.com: Dominion Stats: %s" % target_player)
 
-	ret += '<form action="http://localhost:8080/player" method="get">'
+	ret += '<form action="/player" method="get">'
 	ret += '<span class="subhead">Profile for %s</span>' % target_player
 	ret += '<span class="search2">'
         ret += """
