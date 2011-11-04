@@ -441,9 +441,13 @@ def print_totals(checker_output, total):
         print "%-15s %8d %5.2f" % (goal_name, count,
                                    count / float(total))
 
-def all_goals(game_val):
+def check_goals(game_val, goal_names=None):
+    if goal_names is None:
+        goal_names = goal_check_funcs.keys()
+
     goals = {}
-    for goal_name, goal_checker in goal_check_funcs.iteritems():
+    for goal_name in goal_names:
+        goal_checker = goal_check_funcs[goal_name]
         output = goal_checker(game_val)
         if output:
             goals[goal_name] = output
@@ -454,14 +458,37 @@ def main():
     c = pymongo.Connection()
     games_collection = c.test.games
     output_collection = c.test.goals
+    stats_collection = c.test.goal_stats
     total_checked = 0
 
     checker_output = collections.defaultdict(int)
 
     parser = utils.incremental_max_parser()
+    parser.add_argument('--goals', metavar='goal_name', nargs='+', 
+                        help='If set, the script will check only the goals specified for all of the games that have already been scanned')
     args = parser.parse_args()
+    if args.goals:
+        valid_goals = True
+        for goal_name in args.goals:
+            if goal_name not in goal_check_funcs:
+                valid_goals = False
+                print "Unrecognized goal name '%s'" % goal_name
+        if not valid_goals:
+            exit(-1)
+        goals_to_check = args.goals
 
-    scanner = incremental_scanner.IncrementalScanner('goals', c.test)
+        for goal_name in args.goals:
+            stats_collection.save( {'_id': goal_name, 'total': 0} )
+
+        scanner = incremental_scanner.IncrementalScanner('subgoals', c.test)
+        scanner.reset()
+        main_scanner = incremental_scanner.IncrementalScanner('goals', c.test)
+        last = main_scanner.get_max_game_id()
+    else:
+        goals_to_check = None
+        scanner = incremental_scanner.IncrementalScanner('goals', c.test)
+        last = None
+
     if not args.incremental:
         scanner.reset()
         output_collection.remove()
@@ -473,11 +500,28 @@ def main():
     for g in utils.progress_meter(scanner.scan(games_collection, {})):
         total_checked += 1
         game_val = game.Game(g)
-        goals = all_goals(game_val)
 
-        mongo_val = collections.defaultdict( dict )
-        mongo_val['_id'] = game_val.get_id()
-        
+        # Get existing goal set (if exists)
+        game_id = game_val.get_id()
+        mongo_val = output_collection.find_one({'_id': game_id})
+
+        if mongo_val is None:
+            mongo_val = collections.defaultdict( dict )
+            mongo_val['_id'] = game_id
+
+        # If rechecking, delete old values
+        if goals_to_check is not None:
+            for goal_name in goals_to_check:
+                for key, value in mongo_val.items():
+                    if key == '_id':
+                        continue
+                    if goal_name in value:
+                        del value[goal_name]
+
+        # Get new values
+        goals = check_goals(game_val, goals_to_check)
+
+        # Write new values        
         for goal_name, output in goals.items():
             for attainer in output:
                 name = name_merger.norm_name(attainer['player'])
@@ -491,11 +535,21 @@ def main():
         mongo_val = dict(mongo_val)
         output_collection.save(mongo_val)
 
+        if last and game_id == last:
+            break
+        if args.max_games >= 0 and total_checked >= args.max_games:
+            break
+
     print 'ending with id', scanner.get_max_game_id(), 'and num games', \
         scanner.get_num_games()
     scanner.save()
     print_totals(checker_output, total_checked)
-
-
+    for goal_name, count in checker_output.items():
+        stats = stats_collection.find_one( {'_id': goal_name} )
+        if stats is None:
+            stats = {'_id': goal_name, 'total': 0}
+        stats['total'] += count
+        stats_collection.save( stats )
+        
 if __name__ == '__main__':
     main()

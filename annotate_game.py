@@ -24,7 +24,7 @@ def make_graph(label, div_name):
 """ % (label, div_name)
 
 def get_goals(game):
-    glist = goals.all_goals(game)
+    glist = goals.check_goals(game)
     if len(glist)==0:
         goal_contents = None
     else:
