@@ -497,8 +497,7 @@ def main():
     if not args.incremental:
         scanner.reset()
         output_collection.remove()
-    output_collection.ensure_index('attainers.player')
-    output_collection.ensure_index('goal')
+    output_collection.ensure_index('goals.player')
 
     print 'starting with id', scanner.get_max_game_id(), 'and num games', \
         scanner.get_num_games()

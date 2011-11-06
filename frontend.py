@@ -417,7 +417,7 @@ class GoalsPage(object):
                 player = goal['player']
                 goal_name = goal['goal_name']
 
-                goal_freq[ goal_name ] += 1
+                goal_freq[goal_name] += 1
                 attainments_by_player[player][goal_name] += 1
 
         player_scores = {}
