@@ -157,6 +157,8 @@ def CheckMatchBuzzerBeater(g):
     s_scores = sorted(scores.iteritems(), key=operator.itemgetter(1), reverse=True)
     if len(s_scores)>1 and s_scores[0][1] == s_scores[1][1] + 1:
         return [achievement(s_scores[0][0], "Won by exactly one point")]
+    else:
+        return []
 
 def CheckMatchAnticlimactic(g):
     """Shared a victory with two or more opponents"""
@@ -353,8 +355,7 @@ def GetGoalImageFilename(goal_name):
     return 'static/images/%s.png' % goal_name
 
 def MaybeRenderGoals(db, norm_target_player):
-    game_matches = list(db.goals.find({norm_target_player: {"$ne" : None}}))
-
+    game_matches = list(db.goals.find({'goals.player': norm_target_player}))
     ret = ''
 
     if game_matches:
@@ -386,12 +387,15 @@ function toggle(item) {
         goals_achieved = []
         for game_match in game_matches:
             game_id = game_match['_id']
-            for goal_name, matches in game_match[norm_target_player].items():
-                for match in matches:
-                    match['_id'] = game_id
-                    goals_by_name[goal_name].append(match)
-                    if goal_name not in goals_achieved:
-                        goals_achieved.append(goal_name)
+            for goal in game_match['goals']:
+                if goal['player'] != norm_target_player:
+                    continue
+                goal_name = goal['goal_name']
+                goal['_id'] = game_id
+
+                goals_by_name[goal_name].append(goal)
+                if goal_name not in goals_achieved:
+                    goals_achieved.append(goal_name)
         
         def GroupPriorityAndName(goal):
             func = goal_check_funcs[goal]
@@ -445,12 +449,13 @@ def check_goals(game_val, goal_names=None):
     if goal_names is None:
         goal_names = goal_check_funcs.keys()
 
-    goals = {}
+    goals = []
     for goal_name in goal_names:
         goal_checker = goal_check_funcs[goal_name]
         output = goal_checker(game_val)
-        if output:
-            goals[goal_name] = output
+        for goal in output:
+            goal['goal_name'] = goal_name
+            goals.append(goal)
     return goals
 
 
@@ -508,29 +513,26 @@ def main():
         if mongo_val is None:
             mongo_val = collections.defaultdict( dict )
             mongo_val['_id'] = game_id
+            mongo_val['goals'] = []
 
         # If rechecking, delete old values
         if goals_to_check is not None:
-            for goal_name in goals_to_check:
-                for key, value in mongo_val.items():
-                    if key == '_id':
-                        continue
-                    if goal_name in value:
-                        del value[goal_name]
+            goals = mongo_val['goals']
+            for ind in range( len(goals)-1, -1, -1):
+                goal = goals[ind]
+                if goal['goal_name'] in goals_to_check:
+                    del goals[ind]
 
         # Get new values
         goals = check_goals(game_val, goals_to_check)
 
         # Write new values        
-        for goal_name, output in goals.items():
-            for attainer in output:
-                name = name_merger.norm_name(attainer['player'])
-                del attainer['player']
-                if goal_name in mongo_val[name]:
-                    mongo_val[name][goal_name].append( attainer )
-                else:
-                    mongo_val[name][goal_name] = [ attainer ]
-                checker_output[goal_name] += 1
+        for goal in goals:
+            name = name_merger.norm_name(goal['player'])
+            print name
+            goal_name = goal['goal_name']
+            mongo_val['goals'].append( goal )
+            checker_output[goal_name] += 1
 
         mongo_val = dict(mongo_val)
         output_collection.save(mongo_val)
