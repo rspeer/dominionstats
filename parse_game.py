@@ -5,6 +5,7 @@
 
 import collections
 import codecs
+import itertools
 import os
 import multiprocessing
 import pprint
@@ -41,8 +42,11 @@ KW_ANOTHER_ONE = 'another one'
 KW_BUYS = ' buys '
 KW_DISCARDS = ' discards '
 KW_GAINING = ' gaining ' 
+KW_DRAWS = ' draws '
 KW_GAINS_A = ' gains a'
+KW_GAMES_A = ' games a'  # short lived bug in iso, spelled gains as games
 KW_GAINS_THE = ' gains the '
+KW_GET = 'get +'
 KW_GETS = ' gets +'
 KW_GETTING = ' getting +'
 KW_IS_TRASHED = ' is trashed.'
@@ -61,9 +65,11 @@ KW_TRASHING = ' trashing '
 KW_TURNS_UP_A = ' turns up a'
 KW_WHICH_IS_WORTH = ' which is worth +$'
 KW_WITH_A = ' with a'
+KW_WISHING = ' wishing '
+KW_INSTEAD = ' instead.'
 KEYWORDS = [locals()[w] for w in dict(locals()) if w.startswith('KW_')]
 
-class BogusGame(Exception):
+class BogusGameError(Exception):
     """ Exception for a degenerate game that cannot or should not be parsed."""
 
     def __init__(self, reason):
@@ -86,11 +92,11 @@ def capture_cards(line):
     card_sections = SPLIT_COMMA_AND_RE.split(line)
     for sect in card_sections:
         split_at_span = sect.split('<span')
-        if len(split_at_span) == 0:
+        if not split_at_span:
             continue
         first = split_at_span[0]
         split_first = first.split()
-        if len(split_first) == 0:
+        if not split_first:
             mult = 1
         else:
             mult = _as_int_or_1(split_first[-1])
@@ -107,7 +113,7 @@ def capture_cards(line):
             if maybe_plural == '&diams;':
                 continue
             try:
-                card = card_info.SingularOf(maybe_plural)
+                card = card_info.singular_of(maybe_plural)
             except KeyError, exception:
                 print line
                 raise exception
@@ -119,7 +125,9 @@ def assign_win_points(game_dict):
     def win_tuple(deck_dict):        
         """ Return tuple ordered by increasing final standing. """
         # negate turns so that max() behaves; points good, turns bad.
-        return (deck_dict['points'], -len(deck_dict['turns']))
+        num_normal_turns = sum(not ('poss' in t or 'outpost' in t) 
+                               for t in deck_dict['turns'])
+        return (deck_dict['points'], -num_normal_turns)
 
     decks = game_dict['decks']
     winner_tuple = max(win_tuple(p) for p in decks)
@@ -136,7 +144,7 @@ def associate_game_with_norm_names(game_dict):
     """ Fill players field in game_dict with list of normed player names."""
     game_dict['players'] = []
     for player_deck in game_dict['decks']:
-        normed_name = name_merger.NormName(player_deck['name'])
+        normed_name = name_merger.norm_name(player_deck['name'])
         game_dict['players'].append(normed_name)
 
 def associate_turns_with_owner(game_dict, turns):
@@ -161,7 +169,7 @@ def associate_turns_with_owner(game_dict, turns):
         del turn['name']
 
     if order_ct != len(game_dict['decks']):
-        raise BogusGame('Did not find turns for all players')
+        raise BogusGameError('Did not find turns for all players')
 
 ONLY_NUMBERS_RE = re.compile('^\d+$')
 
@@ -173,27 +181,27 @@ def validate_names(decks):
     for deck in decks:
         name = deck['name']
         if name in used_names:
-            raise BogusGame('Duplicate name %s' % name)
+            raise BogusGameError('Duplicate name %s' % name)
         used_names.add(name)
 
-        if name in ['a', 'and']:
-            raise BogusGame("annoying name " + name)
+        if name in ['a', 'and', 'turn']:
+            raise BogusGameError("annoying name " + name)
         if '---' in name:
-            raise BogusGame('--- in name ' + name)
+            raise BogusGameError('--- in name ' + name)
         
         if ONLY_NUMBERS_RE.match(name):
-            raise BogusGame('name contains only numbers ' + name)
+            raise BogusGameError('name contains only numbers ' + name)
 
         if name[0] == '.':
-            raise BogusGame('name %s starts with period' % name)
+            raise BogusGameError('name %s starts with period' % name)
         for kword in KEYWORDS:
             if kword.lstrip() in name or kword.rstrip() in name:
-                raise BogusGame('name %s contains keyword %s' % (name, kword))
+                raise BogusGameError('name %s contains keyword %s' % (name, kword))
 
     if len(used_names) != len(decks):
-        raise BogusGame('not everyone took a turn?')
+        raise BogusGameError('not everyone took a turn?')
     if len(decks) <= 1:
-        raise BogusGame('only one player')
+        raise BogusGameError('only one player')
 
 def canonicalize_names(turns_str, player_names):
     """ Return a new string in which all player names are replaced by
@@ -233,6 +241,7 @@ def parse_game(game_str, dubious_check = False):
       game_end: List of cards exhausted that caused the game to end.
       resigned: True iff some player in the game resigned..
     """
+    game_str = game_str.replace('&mdash;', '---')
     try:
         split_sects = SECTION_SEP.split(game_str)
         header_str, decks_blob, trash_and_turns = split_sects
@@ -255,8 +264,8 @@ def parse_game(game_str, dubious_check = False):
     associate_turns_with_owner(game_dict, turns)
     assign_win_points(game_dict)
 
-    if dubious_check and Game(game_dict).DubiousQuality():
-        raise BogusGame('Dubious Quality')
+    if dubious_check and Game(game_dict).dubious_quality():
+        raise BogusGameError('Dubious Quality')
 
     return game_dict
 
@@ -279,7 +288,7 @@ def parse_header(header_str):
     return {'game_end': gone, 'supply': supply, 'resigned': resigned}
 
 PLACEMENT_RE = re.compile('#\d (.*)')
-POINTS_RE = re.compile(': (-*\d+) points(\s|(' + re.escape('</b>') + '))')
+POINTS_RE = re.compile(': (-*\d+) point(s?)(\s|(' + re.escape('</b>') + '))')
 
 def parse_deck(deck_str):
     """ Given an isotropic deck string, return a dictionary containing the
@@ -309,7 +318,7 @@ def parse_deck(deck_str):
                                 name_vp_list[point_loc + 1:])
     else:
         resign_loc = name_vp_list.find('resigned')
-        assert resign_loc != -1
+        assert resign_loc != -1, 'could not find resign in %s' % name_vp_list
         resigned, points = True, -100
         name_points, vp_list = (name_vp_list[:resign_loc],
                                 name_vp_list[resign_loc + 1:])
@@ -344,12 +353,13 @@ def parse_deck(deck_str):
             right_bracket_index = card_blob.find('>')
             card_name = card_blob[right_bracket_index + 1:]
             try:
-                card_name = card_info.SingularOf(card_name)
+                card_name = card_info.singular_of(card_name)
             except KeyError, exception:
                 print chunk, card_name, card_blob[right_bracket_index - 10:]
                 raise exception
             card_quant = int(card_blob.split()[0])
             deck_comp[card_name] = card_quant
+    #FIXME: deck_comp is undefined if there's no vp_list
     return {'name': name, 'points': points, 'resigned': resigned,
             'deck': deck_comp, 'vp_tokens': vp_tokens}
 
@@ -398,13 +408,13 @@ def count_money(plays):
             coppersmith_ct += 1
         elif card == 'Copper':
             money += 1 + coppersmith_ct
-        elif card_info.IsTreasure(card):
-            money += card_info.MoneyValue(card)
+        elif card_info.is_treasure(card):
+            money += card_info.money_value(card)
     return money
 
 PLAYER_IND_RE = re.compile('player(?P<num>\d+)')
 
-class PlayerTracker:
+class PlayerTracker(object):
     ''' The player tracker is used to keep track of the active player being
     modified by the gain and trashes actions in a sequence of isotropic
     game lines. '''
@@ -425,7 +435,7 @@ class PlayerTracker:
 
         if len(mentioned_players) > 0:
             self.player_stack[-1] = mentioned_players[-1]
-            if self.orig_player == None:
+            if self.orig_player is None:
                 self.orig_player = mentioned_players[-1]
 
         return self.player_stack[-1]
@@ -447,6 +457,12 @@ def _get_real_name(canon_name, names_list):
 class ParseTurnHeaderError(Exception):
     def __init__(self, line):
         self.line = line
+
+    def __str__(self):
+        return repr(self)
+        
+    def __repr__(self):
+        return 'ParseTurnHeaderError %s' % self.line
 
 def parse_turn_header(turn_header_line, names_list = None):
     """ Given a turn header line return a dictionary containing 
@@ -517,16 +533,17 @@ def parse_turn(turn_blob, names_list):
     if 'outpost' in parsed_header:
         outpost = True
 
-    ret = {'gains': [], 'trashes': []}
+    ret = {'gains': [], 'trashes': [], 'buys': []}
     plays = []
-    buys = []
     returns = []
     turn_money = 0
     vp_tokens = 0
     ps_tokens = 0
     opp_turn_info = collections.defaultdict(lambda: {'gains': [],
-                                                     'trashes': []})
+                                                     'trashes': [],
+                                                     'buys': []})
     tracker = PlayerTracker()
+    
     for line_idx, line in enumerate(lines):
         active_player = tracker.get_active_player(line)
         if active_player == tracker.current_player():
@@ -537,6 +554,10 @@ def parse_turn(turn_blob, names_list):
         has_trashing = KW_TRASHING in line
         has_trashes = KW_TRASHES in line
         has_gaining = KW_GAINING in line
+        orig_buys_len = len(targ_obj.get('buys', []))
+        orig_gains_len = len(targ_obj.get('gains', []))
+
+        did_trading_post_gain = False
 
         if has_trashes:
             if has_gaining:
@@ -544,15 +565,16 @@ def parse_turn(turn_blob, names_list):
                 gain_start = line.find(KW_GAINING)
                 targ_obj['trashes'].extend(capture_cards(line[:gain_start]))
                 targ_obj['gains'].extend(capture_cards(line[gain_start:]))
-                continue
-            targ_obj['trashes'].extend(capture_cards(line))
+                did_trading_post_gain = True                
+            else:
+                targ_obj['trashes'].extend(capture_cards(line))
         if KW_WITH_A in line:
             if KW_REPLACING in line:
                 new_gained_portion = line[line.find(KW_WITH_A):]
                 targ_obj['gains'].extend(capture_cards(new_gained_portion))
         if KW_PLAYS in line or KW_PLAYING in line: 
             plays.extend(capture_cards(line))
-        if has_gaining:
+        if has_gaining and not did_trading_post_gain:
             if KW_ANOTHER_ONE in line: # mints a gold gaining another one
                 targ_obj['gains'].extend(capture_cards(line))
             else:
@@ -560,11 +582,15 @@ def parse_turn(turn_blob, names_list):
                 targ_obj['gains'].extend( 
                     capture_cards(line[line.find(KW_GAINING):])) 
         if KW_BUYS in line: 
-            buys.extend(capture_cards(line))
+            targ_obj['buys'].extend(capture_cards(line))
         if KW_GAINS_THE in line:
             targ_obj['gains'].extend(capture_cards(line))
         if has_trashing: 
-            if KW_REVEALING in line:  # reveals watchtower trashing ...
+            if KW_REVEALS in lines[line_idx - 1] and not KW_DRAWS in line:
+                targ_obj['trashes'].extend(capture_cards(lines[line_idx - 1]))
+            if KW_REVEALING in line or KW_REVEALS in line:  
+                # reveals watchtower trashing ...
+                # noble brigand reveals xx, yy and treashes yy
                 trashed = capture_cards(line[line.find(KW_TRASHING):])
                 targ_obj['trashes'].extend(trashed)
             else:
@@ -572,12 +598,12 @@ def parse_turn(turn_blob, names_list):
                 if KW_GAINING in line:
                     rest = line[:line.find(KW_GAINING)]
                 targ_obj['trashes'].extend(capture_cards(rest))
-        if KW_GAINS_A in line:
+        if KW_GAINS_A in line or KW_GAMES_A in line:
             if KW_TOKEN in line:
                 assert 'Pirate Ship' in capture_cards(line)
                 ps_tokens += 1
             else:
-                rest = line[line.find(KW_GAINS_A):]
+                rest = line[max(line.find(KW_GAINS_A), line.find(KW_GAMES_A)):]
                 targ_obj['gains'].extend(capture_cards(rest))
         if KW_IS_TRASHED in line:
             # Saboteur after revealing cards, name not mentioned on this line.
@@ -600,7 +626,7 @@ def parse_turn(turn_blob, names_list):
         if KW_REVEALING in line and KW_TO_THE_SUPPLY in line:
             # old style ambassador line
             returns.extend(capture_cards(line))
-        if KW_GETTING in line or KW_GETS in line:
+        if KW_GETTING in line or KW_GETS in line or KW_GET in line:
             money_match = GETTING_MONEY_RE.search(line)
             if money_match:
                 turn_money += int(money_match.group(1))
@@ -610,24 +636,53 @@ def parse_turn(turn_blob, names_list):
             turn_money += int(worth_match.group(1))
         if u'▼' in line:
             vp_tokens += int(VP_TOKEN_RE.search(line).group('num'))
-            
-    if poss:
-        def _delete_if_exists(d, n):
-            if n in d:
-                del d[n]
+        if KW_INSTEAD in line and not KW_WISHING in line and 'Trader' in line:
+            if 'buy_or_gain' in targ_obj:
+                targ_list = targ_obj[targ_obj['buy_or_gain']]
+                non_silver_ind = len(targ_list) - 1
+                while (non_silver_ind >= 0 and 
+                       targ_list[non_silver_ind] == 'Silver'):
+                    non_silver_ind -= 1
+                # This shouldn't work when there is no non-silver, but then 
+                # non_silver_ind == -1 if there is no non-silver, 
+                # which magically pops the last item.  <3 guido.
+                targ_list.pop(non_silver_ind)
+            else:
+                assert 'Ill-Gotten Gains' in plays, (
+                    "line %s: line\n, targ_obj: %s\n context: %s" % (
+                        line, str(targ_obj), 
+                        '\n'.join(lines[line_idx - 2: line_idx + 2])))
 
+        now_buys_len = len(targ_obj.get('buys', []))
+        now_gains_len = len(targ_obj.get('gains', []))
+        if now_buys_len > orig_buys_len:
+            targ_obj['buy_or_gain'] = 'buys'
+        if now_gains_len > orig_gains_len:
+            targ_obj['buy_or_gain'] = 'gains'
+
+        assert not (now_buys_len > orig_buys_len and
+                    now_gains_len > orig_gains_len)
+
+    def _delete_if_exists(d, n):
+        if n in d:
+            del d[n]
+
+    _delete_if_exists(ret, 'buy_or_gain')
+
+    if poss:
         possessee_info = opp_turn_info[possessee_name]
         for k in ['gains', 'trashes']:
             _delete_if_exists(possessee_info, k)
 
         possessee_info['vp_token'], vp_tokens = vp_tokens, 0
         possessee_info['returns'], returns = returns, []
-        buys = []  # buys handled by possesion gain line.
+        ret['buys'] = []  # buys handled by possesion gain line.
 
     for opp in opp_turn_info.keys():
+        _delete_if_exists(opp_turn_info[opp], 'buy_or_gain')
         delete_keys_with_empty_vals(opp_turn_info[opp])
     ret.update({'name': names_list[tracker.current_player()], 
-                'plays': plays , 'buys': buys, 'returns': returns,
+                'plays': plays , 'returns': returns,
                 'money': count_money(plays) + turn_money,
                 'vp_tokens': vp_tokens, 'ps_tokens': ps_tokens,
                 'poss': poss, 'outpost': outpost, 
@@ -655,6 +710,7 @@ def parse_turns(turns_blob, names_list):
 def outer_parse_game(filename):
     """ Parse game from filename. """
     contents = codecs.open(filename, 'r', encoding='utf-8').read()
+
     if not contents:
         # print 'empty game'
         return None
@@ -665,9 +721,14 @@ def outer_parse_game(filename):
         parsed = parse_game(contents, dubious_check = True)
         parsed['_id'] = filename.split('/')[-1]
         return parsed
-    except BogusGame, bogus_game_exception:
+    except BogusGameError, bogus_game_exception:
         # print 'skipped', filename, 'because', bogus_game_exception.reason
         return None
+    except ParseTurnHeaderError, p:
+        print 'parse turn header error', p, filename
+    except AssertionError, e:
+        print filename
+        raise e
 
 # http://stackoverflow.com/questions/312443/how-do-you-split-a-list-into-evenly-sized-chunks-in-python
 def segments(lis, chunk_size):
@@ -700,11 +761,12 @@ def convert_to_json(year_month_day, games_to_parse = None):
     if not games_to_parse:
         print 'no data files to parse in ', year_month_day
         return
+    else:
+        print len(games_to_parse), 'games to parse in', year_month_day
 
-    # games_to_parse = games_to_parse[:1000]
+    #games_to_parse = games_to_parse[:5000]
     pool = multiprocessing.Pool()
-    parsed_games = pool.map(outer_parse_game, games_to_parse, 
-                            chunksize=50)
+    parsed_games = pool.map(outer_parse_game, games_to_parse, chunksize=50)
     #parsed_games = map(outer_parse_game, games_to_parse)
     print year_month_day, 'before filtering', len(parsed_games)
     parsed_games = [x for x in parsed_games if x]
@@ -716,7 +778,8 @@ def convert_to_json(year_month_day, games_to_parse = None):
     labelled_segments = [(i, year_month_day, c) for i, c in
                          enumerate(game_segments)]
     pool.map(dump_segment, labelled_segments)
-
+    #map(dump_segment, labelled_segments)
+    pool.close()
 
 def track_brokenness(parsed_games):
     """Print some summary statistics about cards that cause bad parses."""
@@ -751,18 +814,20 @@ def check_game_sanity(game_val, output):
     In particular, check that the end game player decks match the result of 
     simulating deck interactions saved in game val."""
 
-    supply = game_val.Supply()
-    if set(supply).intersection(['Masquerade', 'Black Market']):
+    supply = game_val.get_supply()
+    # ignore known bugs.
+    if set(supply).intersection(['Masquerade', 'Black Market', 'Trader']):
         return True
-    
+
+    # TODO: add score sanity checking here
     last_state = None
-    game_state_iterator = game_val.GameStateIterator()
+    game_state_iterator = game_val.game_state_iterator()
     for game_state in game_state_iterator:
         last_state = game_state
-    for player_deck in game_val.PlayerDecks():
+    for player_deck in game_val.get_player_decks():
         parsed_deck_comp = player_deck.Deck()
-        computed_deck_comp = last_state.GetDeckComposition(
-            player_deck.Name()) 
+        computed_deck_comp = last_state.get_deck_composition(
+            player_deck.name()) 
 
         delete_keys_with_empty_vals(parsed_deck_comp)
         computed_dict_comp = dict(computed_deck_comp)
@@ -781,9 +846,12 @@ def check_game_sanity(game_val, output):
                                 computed_deck_comp.get(card, 0)))
                     found_something_wrong = True
             if found_something_wrong:
-                output.write('%s %s\n' % (player_deck.Name(), game_val.Id()))
-                output.write(' '.join(game_val.Supply()))
-                output.write('\n')
+                try:
+                    output.write('%s %s\n' % (player_deck.name(), game_val.get_id()))
+                    output.write(' '.join(game_val.get_supply()))
+                    output.write('\n')
+                except UnicodeEncodeError, e:
+                    None
                 return False
     return True
 
@@ -791,13 +859,12 @@ def main():
     #print AnnotateGame(codecs.open(fn, 'r', encoding='utf-8').read()).encode(
     #    'utf-8')
     #return
-    args = utils.IncrementalDateRangeCmdLineParser().parse_args()
+    args = utils.incremental_date_range_cmd_line_parser().parse_args()
     print args
     days = os.listdir('static/scrape_data')
     days.sort()
     for year_month_day in days:
-        if not utils.IncludesDay(args, year_month_day):
-            print year_month_day, 'not in date range, skipping'
+        if not utils.includes_day(args, year_month_day):
             continue
             
         if args.incremental and os.path.exists(
@@ -805,108 +872,12 @@ def main():
             print 'skipping', year_month_day, 'because already done'
             continue        
 
-        convert_to_json(year_month_day)
-
-def _pretty_format_html(v):
-    return '<br>' + pprint.pformat(v).replace(
-        '\n', '<br>').replace(' ', '&nbsp')
-
-def annotate_game(contents, game_id, debug=False):
-    """ Decorate game contents with some JS that makes a score keeper 
-    and provides anchors per turn."""
-    parsed_game = parse_game(contents, dubious_check = False)
-    states = []
-    
-    game_val = game.Game(parsed_game)
-    for game_state in game_val.GameStateIterator():
-        states.append(game_state.EncodeGameState())
-
-    parsed_game['game_states'] = states
-
-    ret = u''
-
-    start_body = contents.find('<body>') + len('<body>')
-    ret += contents[:start_body]
-    ret += """
-<div id="game-display"></div>
-<script src="static/flot/jquery.js"></script>
-<script src="static/game_viewer.js"></script>
-<script type="text/javascript">
-        var game = %s;
-        var card_list = %s;
-        $(document).ready(DecorateGame);
-</script>
-""" % (json.dumps(parsed_game, indent=2), 
-       open('static/card_list.js', 'r').read())
-    contents = contents[start_body:]
-    if debug > 2:
-        ret += _pretty_format_html(parsed_game)
-    if debug > 1:
-        for turn in game_val.Turns():
-            ret += '%d %d %d %s %s<br>' % (
-                turn.TurnNo(), 
-                turn.Player().TurnOrder(), turn.PossNo(), 
-                turn.turn_dict.get('poss', False),
-                turn.Player().Name())
-
-    import cStringIO as StringIO
-    output_buf = StringIO.StringIO()
-    if not check_game_sanity(game_val, output_buf):
-        ret += 'Parsing error, data mismatch, '
-        ret += '''<a href="game?game_id=%s&debug=1">be a hero, find the 
-bug</a> and tell rrenaud@gmail.com<br>''' % game_id
-        ret += output_buf.getvalue().replace('\n', '<br>\n')
-
-    cur_turn_ind = 0
-    
-    split_turn_chunks = split_turns(contents)
-    poss_num = 0
-    ret += split_turn_chunks[0]
-    split_turn_chunks.pop(0)
-
-    for idx, turn_chunk in enumerate(split_turn_chunks):
-        split_chunk = turn_chunk.split('\n')
-        parsed_header = parse_turn_header(split_chunk[0])
-
-        player = parsed_header['name']
-        if 'turn_no' in parsed_header:
-            turn_no = parsed_header['turn_no'] - 1
-            # these turn id's are 0 indexed
-            turn_id = '%s-turn-%d' % (player, turn_no)
-            # and since these are shown, they are 1 indexed
-            show_turn_id = '%s-show-turn-%d' % (player, turn_no + 1)
-            poss_num = 0
-        elif 'pname' in parsed_header:
-            turn_id = '%s-poss-turn-%d-%d' % (player, turn_no,
-                                              poss_num)
-            show_turn_id = '%s-show-poss-turn-%d-%d' % (
-                player, turn_no + 1, poss_num + 1)
-            poss_num += 1
-        else:
-            assert 'outpost' in parsed_header, str(parsed_header)
-            turn_id = '%s-outpost-turn-%d' % (player, turn_no)
-            show_turn_id = '%s-show-outpost-turn-%d' % (
-                player, turn_no + 1)
-            poss_num = 0
-
-        ret += '<div id="%s"></div>' % turn_id
-        ret += '<a name="%s"></a><a href="#%s">%s</a>' % (
-            show_turn_id, show_turn_id, split_chunk[0])
-
-        if debug:
-            ret += '<br>' + repr(game_val.Turns()[cur_turn_ind]).replace(
-                '\n', '<br>')
-        cur_turn_ind += 1
-
-        if idx != len(split_turn_chunks) - 1:
-            ret += turn_chunk[turn_chunk.find('\n'):]
-        else:            
-            before_end = turn_chunk.find('</html')
-            ret += turn_chunk[turn_chunk.find('\n'): before_end]
-            ret += '<div id="end-game">\n'
-            ret += '</div>&nbsp<br>\n' * 10  
-            ret += '</html>'
-    return ret
+        try:
+            print 'trying', year_month_day
+            convert_to_json(year_month_day)
+        except ParseTurnHeaderError, e:
+            print e
+            return
     
 # def profilemain():
 #     import hotshot, hotshot.stats

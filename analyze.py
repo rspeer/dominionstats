@@ -30,7 +30,7 @@ class CardStatistic(PrimitiveConversion):
             number of a given card.  Card advantages are rounded relative
             to the average number gained/bought by other players through the
             game.
-"""
+    """
     def __init__(self):
         self.available = 0
         self.win_any_accum = MeanVarStat()
@@ -53,22 +53,21 @@ class GamesAnalysis(PrimitiveConversion):
         """
         self.num_games += 1
         seen_cards_players = set()
-        self.max_game_id = max(self.max_game_id, game.Id())
-        for card in game.Supply() + card_info.EVERY_SET_CARDS:
-            self.card_stats[card].available += len(game.PlayerDecks())
+        self.max_game_id = max(self.max_game_id, game.get_id())
+        for card in game.get_supply() + card_info.EVERY_SET_CARDS:
+            self.card_stats[card].available += len(game.get_player_decks())
 
-        accumed_by_player = collections.defaultdict(
-            lambda : collections.defaultdict(int))
-        for turn in game.Turns():
-            deck = turn.Player()
-            turnno = turn.TurnNo()
-            for card in turn.PlayerAccumulates():
+        accumed_by_player = collections.defaultdict(lambda : collections.defaultdict(int))
+        for turn in game.get_turns():
+            deck = turn.get_player()
+            turnno = turn.get_turn_no()
+            for card in turn.player_accumulates():
                 per_card_stat = self.card_stats[card]
                 if (deck, card) not in seen_cards_players:
                     seen_cards_players.add((deck, card))
-                    per_card_stat.win_any_accum.AddOutcome(deck.WinPoints())
-                per_card_stat.win_weighted_accum.AddOutcome(deck.WinPoints())
-                per_card_stat.win_weighted_accum_turn[turnno].AddOutcome(
+                    per_card_stat.win_any_accum.add_outcome(deck.WinPoints())
+                per_card_stat.win_weighted_accum.add_outcome(deck.WinPoints())
+                per_card_stat.win_weighted_accum_turn[turnno].add_outcome(
                     deck.WinPoints())
                 accumed_by_player[deck][card] += 1
                 
@@ -80,12 +79,12 @@ class GamesAnalysis(PrimitiveConversion):
                     odeck_count += 1
                     for card in other_accum:
                         total_other_decks[card] += other_accum[card]
-            assert odeck_count != 0, game.IsotropicUrl()
+            assert odeck_count != 0, game.isotropic_url()
             for card in set(card_accum_dict.keys() + total_other_decks.keys()):
                 per_card_stat = self.card_stats[card]
                 other_avg_freq = total_other_decks[card] / odeck_count
                 card_diff_index = int(card_accum_dict[card] - other_avg_freq)
-                per_card_stat.win_diff_accum[card_diff_index].AddOutcome(
+                per_card_stat.win_diff_accum[card_diff_index].add_outcome(
                     deck.WinPoints())
 
 def main():
@@ -110,16 +109,16 @@ def main():
     if args.incremental:
         utils.read_object_from_db(game_analysis, output_collection, '')
     else:
-        scanner.Reset()
+        scanner.reset()
 
     output_file_name = 'static/output/all_games_card_stats.js'
 
     if not os.path.exists('static/output'):
         os.makedirs('static/output')
 
-    print scanner.StatusMsg()
+    print scanner.status_msg()
 
-    for idx, raw_game in enumerate(scanner.Scan(games, {})):
+    for idx, raw_game in enumerate(scanner.scan(games, {})):
         try:
             if idx % 1000 == 0:
                 print idx
@@ -128,21 +127,21 @@ def main():
             if idx == args.max_games:
                 break
         except int, exception:
-            print Game(raw_game).IsotropicUrl()
+            print Game(raw_game).isotropic_url()
             print exception
             print raw_game
             raise 
 
-    game_analysis.max_game_id = scanner.MaxGameId()
-    game_analysis.num_games = scanner.NumGames()
+    game_analysis.max_game_id = scanner.get_max_game_id()
+    game_analysis.num_games = scanner.get_num_games()
     utils.write_object_to_db(game_analysis, output_collection, '')
 
     output_file = open(output_file_name, 'w')
     output_file.write('var all_card_data = ')
 
-    json.dump(game_analysis.ToPrimitiveObject(), output_file)
-    print scanner.StatusMsg()
-    scanner.Save()
+    json.dump(game_analysis.to_primitive_object(), output_file)
+    print scanner.status_msg()
+    scanner.save()
 
 if __name__ == '__main__':
     main() 

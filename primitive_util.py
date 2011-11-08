@@ -1,23 +1,31 @@
 #!/usr/bin/python
 
+""" This a mixin to a generically serialize objects to primative types.
+
+This is serializing the internal variables of classes, and hence is a
+big abstraction leak.  By mixing with this class, you can give yourself 
+headaches if you change the implementation of a class and want to work
+with previously serialized versions of data.
+"""
+
 import collections
 
 PRIMITIVES = [dict, str, int, list, float, unicode]
 
-def ToPrimitive(val):
-    if hasattr(val, 'ToPrimitiveObject'):
-        return val.ToPrimitiveObject()
-    assert type(val) in PRIMITIVES, val
+def to_primitive(val):
+    if hasattr(val, 'to_primitive_object'):
+        return val.to_primitive_object()
+    assert type(val) in PRIMITIVES, (val, type(val))
     return val
 
 class PrimitiveConversion(object):
-    def ToPrimitiveObject(self):
+    def to_primitive_object(self):
         ret = {}
         for k, v in self.__dict__.iteritems():
-            ret[k] = ToPrimitive(v)
+            ret[k] = to_primitive(v)
         return ret
 
-    def FromPrimitiveObject(self, obj):
+    def from_primitive_object(self, obj):
         # Get rid of _id because it's something that mongo injects into our
         # objects, and it's not really natural to the objects themselves.
         obj_keys_except_id = set(obj.keys()) - set(['_id'])
@@ -25,8 +33,8 @@ class PrimitiveConversion(object):
         assert unicoded_keys == obj_keys_except_id, (
             '%s != %s' % (str(unicoded_keys),  str(obj_keys_except_id)))
         for k in obj_keys_except_id:
-            if hasattr(self.__dict__[k], 'FromPrimitiveObject'):
-                self.__dict__[k].FromPrimitiveObject(obj[k])
+            if hasattr(self.__dict__[k], 'from_primitive_object'):
+                self.__dict__[k].from_primitive_object(obj[k])
             else:
                 assert type(obj[k]) in PRIMITIVES, obj[k]
                 self.__dict__[k] = obj[k]
@@ -37,26 +45,25 @@ class ConvertibleDefaultDict(collections.defaultdict, PrimitiveConversion):
         self.value_type = value_type
         self.key_type = key_type
 
-    def ToPrimitiveObject(self):
+    def to_primitive_object(self):
         ret = {}
         for key, val in self.iteritems():
             if type(key) == unicode:
                 key = key.encode('utf-8')
             else:
                 key = str(key)
-            ret[key] = ToPrimitive(val)
+            ret[key] = to_primitive(val)
         return ret
 
-    def FromPrimitiveObject(self, obj):
+    def from_primitive_object(self, obj):
         for k, v in obj.iteritems():
             if k == '_id': continue
             val = self.value_type()
-            if hasattr(val, 'FromPrimitiveObject'):
-                val.FromPrimitiveObject(v)
+            if hasattr(val, 'from_primitive_object'):
+                val.from_primitive_object(v)
             else: 
                 val = v
             self[self.key_type(k)] = val
-
 
 if __name__ == '__main__':
     import pymongo
@@ -68,7 +75,7 @@ if __name__ == '__main__':
 
     a_from_db = list(coll.find())[0]
     new_a = A()
-    new_a.FromPrimitiveObject(a_from_db)
+    new_a.from_primitive_object(a_from_db)
     assert new_a.foo == a.foo
     assert new_a.bar == a.bar
 

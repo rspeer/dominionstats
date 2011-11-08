@@ -91,11 +91,25 @@ class Gaussian(object):
       return self.tau / self.pi, sqrt(1/self.pi)
 
 
+  def ProbabilityPositive(self):
+    mu, sigma = self.MuSigma()
+    return 1.0 - scipy_norm(loc=mu, scale=sigma).cdf(0.0)
+
   def __mul__(self, other):
     return Gaussian(pi=self.pi+other.pi, tau=self.tau+other.tau)
 
   def __div__(self, other):
     return Gaussian(pi=self.pi-other.pi, tau=self.tau-other.tau)
+
+  def __add__(self, other):
+    mu1, sigma1 = self.MuSigma()
+    mu2, sigma2 = other.MuSigma()
+    return Gaussian(mu=mu1 + mu2, sigma=sqrt(sigma1*sigma1 + sigma2*sigma2))
+
+  def __sub__(self, other):
+    mu1, sigma1 = self.MuSigma()
+    mu2, sigma2 = other.MuSigma()
+    return Gaussian(mu=mu1 - mu2, sigma=sqrt(sigma1*sigma1 + sigma2*sigma2))
 
 
 class Variable(object):
@@ -104,6 +118,10 @@ class Variable(object):
   def __init__(self):
     self.value = Gaussian()
     self.factors = {}
+
+  def __str__(self):
+    return '%s [%s]' % (self.value, 
+                        ' '.join(str(self.factors[f]) for f in self.factors))
 
   def AttachFactor(self, factor):
     self.factors[factor] = Gaussian()
@@ -310,43 +328,53 @@ def SetParameters(beta=None, epsilon=None, draw_probability=None,
 
 SetParameters()
 
-def get_db_entry(player_info, collection):
-    if isinstance(player_info, dict):
-        # pre-computed skill
-        if 'gamma' not in player_info:
-            player_info['gamma'] = GAMMA
-        return player_info
-    entry = collection.find_one({'name': player_info})
-    if entry is None:
-        if player_info.startswith('open:'):
-            entry = {'mu': 0.0, 'sigma': INITIAL_SIGMA, 'gamma': 0.0001}
-        else:
-            entry = {'mu': INITIAL_MU, 'sigma': INITIAL_SIGMA, 'gamma': GAMMA}
-    return entry
+class SkillInfo:
+  def __init__(self, mu, sigma, gamma):
+    self.mu = mu
+    self.sigma = sigma
+    self.gamma = gamma
 
-def get_skill(player_info, collection):
-    return get_db_entry(player_info, collection)['mu']
+def default_missing_func(name):
+  if name.startswith('open:'):  # this is ugly ;(
+    return SkillInfo(0.0, 25./3, 0)
+  else:
+    return SkillInfo(25.0, 25./3, 25./300)
 
-def get_stdev(player_info, collection):
-    return get_db_entry(player_info, collection)['sigma']
+class SkillTable:
+  def __init__(self, missing_func=None):
+    if missing_func is None:
+      missing_func = default_missing_func
 
-def get_gamma(player_info, collection):
-    return get_db_entry(player_info, collection)['gamma']
+    self.skill_infos = {}
+    self.missing_func = missing_func
+  
+  def _get_skill_info(self, key):
+    if key not in self.skill_infos:
+      self.skill_infos[key] = self.missing_func(key)
+    return self.skill_infos[key]
 
-def set_db_entry(player_name, mu, sigma, gamma, collection):
-    if isinstance(player_name, dict):
-        player_name = player_name['name']
-    floor = mu - 3*sigma
-    ceil = mu + 3*sigma
-    collection.update({'name': player_name},
-                      {'$set': {'mu': mu, 'sigma': sigma, 'gamma': gamma,
-                                'ceil': ceil, 'floor': floor}},
-                      upsert=True)
+  def get_mu(self, player):
+    return self._get_skill_info(player).mu
 
-def db_update_trueskill(team_results, collection):
+  def get_sigma(self, player):
+    return self._get_skill_info(player).sigma
+
+  def get_gamma(self, player):
+    return self._get_skill_info(player).gamma
+
+  def set_mu(self, player, mu):
+    self._get_skill_info(player).mu = mu
+
+  def set_sigma(self, player, sigma):
+    self._get_skill_info(player).sigma = sigma
+
+  def ordered_skills(self):
+    return sorted(self.skill_infos.items(), key = lambda x: -x[1].mu)
+
+def update_trueskill_team(team_results, skill_table):
   """
   Each team_result is a tuple of
-  (list of player identifiers, contributions, rank).
+  (list of player names, contributions, rank).
   The lowest rank is the winner.
   """
   team_results.sort(key=lambda t: t[2])
@@ -360,12 +388,12 @@ def db_update_trueskill(team_results, collection):
   
   # Create each layer of factor nodes.  At the top we have priors
   # initialized to the player's current skill estimate.
-  skill = [PriorFactor(s, Gaussian(mu=get_skill(pl, collection),
-                                   sigma=get_stdev(pl, collection) +
-                                         get_gamma(pl, collection)))
+  
+  skill = [PriorFactor(s, Gaussian(
+        mu=skill_table.get_mu(pl),
+        sigma=skill_table.get_sigma(pl) + skill_table.get_gamma(pl)))
            for (s, pl) in zip(ss, players)]
-  skill_to_perf = [LikelihoodFactor(s, p, BETA**2)
-                   for (s, p) in zip(ss, ps)]
+  skill_to_perf = [LikelihoodFactor(s, p, BETA**2) for (s, p) in zip(ss, ps)]
   player_counter = 0
   team_counter = 0
   perf_to_team = []
@@ -395,6 +423,7 @@ def db_update_trueskill(team_results, collection):
     f.Start()
   for f in skill_to_perf:
     f.UpdateValue()
+    #print("updating skill to perf: %s" % str(f.value))
   for f in perf_to_team:
     f.UpdateSum()
 
@@ -406,11 +435,20 @@ def db_update_trueskill(team_results, collection):
   # This order of evaluation is given by the numbered arrows in Figure
   # 1 of the Herbrich paper.
 
+  #p0v = perf_to_team[0].sum.value
+  #p1v = perf_to_team[1].sum.value
+  #diff_p0p1 = p0v - p1v
+  #print('team perfs %s %s, diff %s' %  (p0v, p1v, diff_p0p1))
+  #print('%.3f' % diff_p0p1.ProbabilityPositive())
+
   for i in range(5):
     for f in team_diff:
       f.UpdateSum()             # arrows (1) and (4)
-    for f in trunc:
+      #print('team  %.3f, %s' % (f.sum.value.ProbabilityPositive(), players))
+
+    for f in trunc: 
       f.Update()                # arrows (2) and (5)
+      #print('trunc %.3f'  % (f.var.value.ProbabilityPositive()))
     for f in team_diff:
       f.UpdateTerm(0)           # arrows (3) and (6)
       f.UpdateTerm(1)
@@ -429,10 +467,9 @@ def db_update_trueskill(team_results, collection):
 
   for s, pl in zip(ss, players):
     mu, sigma = s.value.MuSigma()
-    gamma = get_gamma(pl, collection)
-    set_db_entry(pl, mu, sigma, gamma, collection)
-    if isinstance(pl, basestring) and (mu - sigma*3) > 0 or (mu + sigma*3) < 0:
-        print('%30s : %4.2f +- %4.2f' % (pl, mu, sigma*3))
+    skill_table.set_mu(pl, mu)
+    skill_table.set_sigma(pl, sigma)
+
 
 def AdjustPlayers(players):
   """

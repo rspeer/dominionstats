@@ -164,8 +164,7 @@ function DisplayCardData(card_names_str, graph_name, weight_func) {
 	     yaxis: {  min: mn - range * fraction_buffer,
 		       max: mx + range * fraction_buffer
 		    },
-	     legend: { position: 'nw' } 
-	     
+	     legend: { position: 'se' }
 	 }
   );
 };

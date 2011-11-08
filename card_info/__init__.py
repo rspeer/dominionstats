@@ -1,14 +1,19 @@
 import csv
 import os
 
-_cardlist_reader = csv.DictReader(open('card_list.csv'))
+_cardlist_reader = csv.DictReader(open(
+        os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'card_list.csv')))
 _to_singular = {}
 _to_plural = {}
 _card_index = {}
 
 _card_info_rows = {}
+_card_names = []
 
-def _Init():
+# the way this file is being used, it seems like a good candidate for some sort
+# of Card class with properties, etc
+def _init():
     for idx, cardlist_row in enumerate(_cardlist_reader):
         single, plural = cardlist_row['Singular'], cardlist_row['Plural']
         _to_singular[single] = single
@@ -18,45 +23,54 @@ def _Init():
 
         _card_index[single] = idx
         _card_info_rows[single] = cardlist_row
+        _card_names.append(single)
 
-_Init()
+_init()
 
-def SingularOf(card_name):
+def singular_of(card_name):
     return _to_singular[card_name]
 
-def PluralOf(card_name):
+def plural_of(card_name):
     return _to_plural[card_name]
 
-def Pluralize(card, freq):
-    return SingularOf(card) if freq == 1 else PluralOf(card)
+def pluralize(card, freq):
+    return singular_of(card) if freq == 1 else plural_of(card)
 
-def VPPerCard(singular_card_name):
+def vp_per_card(singular_card_name):
     try:
         return int(_card_info_rows[singular_card_name]['VP'])
     except ValueError:
         return 0
 
-def IsTreasure(singular_card_name):
+def is_treasure(singular_card_name):
     return _card_info_rows[singular_card_name]['Treasure'] == '1'
 
-def Cost(singular_card_name):
+def cost(singular_card_name):
     return _card_info_rows[singular_card_name]['Cost']
 
-# Returns value of card name if the value is unambigous.
-def MoneyValue(card_name):
+# Returns value of card name if the value is unambiguous.
+def money_value(card_name):
     try:
         return int(_card_info_rows[card_name]['Coins'])
     except ValueError, e:
         return 0
 
-def IsVictory(singular_card_name):
+def is_victory(singular_card_name):
     return _card_info_rows[singular_card_name]['Victory'] == '1'
 
-def IsAction(singular_card_name):
+def is_action(singular_card_name):
     return _card_info_rows[singular_card_name]['Action'] == '1'
 
-def NumCopiesPerGame(card_name, num_players):
-    if IsVictory(card_name):
+def num_plus_actions(singular_card_name):
+    r = _card_info_rows[singular_card_name]['Actions']
+    try:
+        return int(r)
+    except ValueError:
+        # variable number of plus actions, just say 1
+        return 1
+
+def num_copies_per_game(card_name, num_players):
+    if is_victory(card_name):
         if num_players >= 3:
             return 12
         return 8
@@ -76,8 +90,11 @@ EVERY_SET_CARDS = ['Estate', 'Duchy', 'Province',
                    'Copper', 'Silver', 'Gold', 'Curse']
 
 OPENING_CARDS = [card for card in _card_info_rows
-                 if Cost(card) in ('0', '2', '3', '4', '5')]
+                 if cost(card) in ('0', '2', '3', '4', '5')]
 OPENING_CARDS.sort()
 
-def CardIndex(singular):
+def card_index(singular):
     return _card_index[singular]
+
+def card_names():
+    return _card_names
