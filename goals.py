@@ -528,7 +528,6 @@ def main():
         # Write new values        
         for goal in goals:
             name = name_merger.norm_name(goal['player'])
-            print name
             goal_name = goal['goal_name']
             mongo_val['goals'].append( goal )
             checker_output[goal_name] += 1

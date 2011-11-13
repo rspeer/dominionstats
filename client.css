@@ -1,7 +1,25 @@
-a#leaguelink { margin-left: 3ex; font-size: x-small }
+img.avatar { float: left; margin-right: 10px; margin-left: -50px; }
+img.avtext { vertical-align: middle; width: 40px; height: 40px; margin: 5px }
+div.logline { margin-left: 50px;}
+div.selfname { display: inline-block; margin-left: 10px; vertical-align: middle }
+a.games { color: blue; font-size: 84%; }
+div.vspacer { padding-top: 5px; }
+
+input.default { color: #999; }
+a.whatsthis { margin-left: 3ex; font-size: x-small }
+hr.autosep { border: 0px solid white; }
 table#player_table { border: none }
 table#player_table td { vertical-align: top; text-align: left; padding-top: 6px }
-.player_td { width: 350px; overflow: hidden }
+div.automatch { vertical-align: middle;
+		padding-top: 10px; margin-top: 10px;
+		padding-bottom: 20px; margin-bottom: 10px;
+		border-bottom: 2px solid #ccc;
+	        border-top: 2px solid #ccc }
+div.automatch input { margin-left: 20px; }
+div.automatch span.label { margin-left: 20px; }
+input.optfeature { margin-left: 30px; margin-right: 1ex; }
+input.optfeature2 { margin-right: 1ex; }
+.player_td { width: 250px; overflow: hidden }
 .pstat { padding-left: 0.8em; color: #69c }
 .pstat b { color: #369 }
 .mystat { color: #396 }
@@ -89,6 +107,7 @@ div.cont img { padding: 0; margin: 0; border: none; vertical-align: top; }
 select { color: green; }
 .card { padding-left: 3ex }
 
+.black { color: black; }
 .card-unknown { background-color: #888; padding: 0 0.5ex }
 .card-none { background-color: #f0f0f0; padding: 0 0.5ex }
 .card-treasure { background-color: #fde164; padding: 0 0.5ex }
@@ -97,14 +116,18 @@ select { color: green; }
 .card-reaction { background-color: #40a8e3; padding: 0 0.5ex }
 .card-duration { background-color: #fe8f4e; padding: 0 0.5ex }
 .card-victory-action { background-image:url('/static/white-green.png'); padding: 0 0.5ex }
+.card-victory-reaction { background-image:url('/static/blue-green.png'); padding: 0 0.5ex }
 .card-victory-treasure { background-image:url('/static/yellow-green.png'); padding: 0 0.5ex }
+.card-treasure-reaction { background-image:url('/static/yellow-blue.png'); padding: 0 0.5ex }
 
 .embargo-star { margin-left: 0.5ex; background-color: #d78adb; padding: 0 0.5ex }
 .trade-route-star { margin-left: 0.5ex; background-color: #fde164; padding: 0 0.5ex }
+.bane-star { margin-left: 0.5ex; background-color: #40a8e3; padding: 0 0.5ex }
 .attack { color: red; }
 .order { margin-left: 1ex; width: 3; display: inline-block; color: red }
+.possessed-log { color: #c09; font-style: italic }
 .possessed { color: #c09; font-style: italic }
-#temp_say { color: #36f; font-style: italic }
+#temp_say { color: #36f; font-style: italic; margin-left: 50px; }
 .em { font-weight: bold; color: #c00; font-size: 150% }
 .gameover { padding: 3em; }
 .confirm { font-weight: bold; color: #c00 }
@@ -152,7 +175,7 @@ span.stash-card { background-color: #888; padding: 0 3px 0 0; margin: 0 3px; }
 		    font-size: 200%;
 		    font-weight: bold;
 		    color: red;
-		    margin: -6px;
+		    margin: -6px -2px;
 		    vertical-align: middle;
 		    visibility: hidden;
 		  }
@@ -163,7 +186,7 @@ span.stash-card { background-color: #888; padding: 0 3px 0 0; margin: 0 3px; }
 div.hand { line-height: 150% }
 td.hand { padding-top: 8px; }
 
-pre#chat { height: 7em; overflow: auto }
+pre#chat { height: 7em; overflow: auto; border-top: 1px solid #ccc; padding-top: 2px }
 pre#chat .name { color: #999 }
 
 div.black { height: 100%;
@@ -215,13 +238,7 @@ div, span, select, html, body, pre { font-family: sans-serif; font-size: 13px; }
 body { cursor: default; padding: 5px; }
 
 table.constr {
-    margin-top: 3ex;
-    margin-left: 3ex;
     padding: 1ex;
-    border: 1px solid #999;
-    }
-table.constr input {
-    margin-right: 2ex;
     }
 
 div.fail {
@@ -243,19 +260,35 @@ div.fail {
 
 .logonly { font-style: italic }
 .announce { color: #c00; font-weight: bold }
+.announce a { color: #c00; text-decoration: underline }
 .activity { color: #999 }
 
+span.seeker { display: inline-block; width: 5ex; padding-right: 3px;
+	      text-align: center; color: #009; font-size: 84%; font-weight: bold; }
+span.infoseek { color: #8E388E; font-size: 84%; font-weight: bold; }
 span.marker { display: inline-block; width: 5ex; padding-right: 3px;
 	      text-align: right; color: #c00; }
 span.imarker { color: #c00; }
 span.rank { font-size: 84%; font-weight: bold; }
+
 table.info { border: none; border-collapse: collapse; }
 table.info td { padding-right: 3em; }
 table.info th { padding-right: 3em; background-color: #eee; }
+table.info td.lb { text-align: center;
+		   background-color: #f8f8f8;
+		   font-weight: bold; }
 #motd { color: #c00; font-weight: bold; padding: 0 1ex 1ex 1ex; }
 
 table.listing th { padding: 2px 5ex; }
 table.listing td.r { text-align: right; padding: 0 }
 
-table.listgame th { font-weight: normal; padding: 0 1ex; }
+table.listgame th { font-weight: normal; padding: 0 1ex; vertical-align: bottom }
 table.listgame td.c { text-align: center; }
+table.listgame td.sm { color: #666; }
+
+pre#log { margin-bottom: 2em; }
+
+div.lobby { float: right; padding: 5px; }
+div.lobby b { font-size: 120%; }
+
+.fan { font-style: italic; color: #c00 }
