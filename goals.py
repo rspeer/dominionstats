@@ -227,7 +227,7 @@ def CheckMatchDukeOfEarl(g):
         if 'Duke' not in deck:
             continue
         duke_pts = game.score_duke(deck)
-        duchy_pts = deck['Duchy'] * card_info.vp_per_card('Duchy')
+        duchy_pts = deck['Duchy'] * 3
         d_pts = duke_pts + duchy_pts
         if d_pts >= 42:
             ret.append( achievement(player, '%d VP from Dukes and Duchies' % d_pts, d_pts) )
