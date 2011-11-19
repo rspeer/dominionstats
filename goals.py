@@ -33,7 +33,7 @@ def CheckMatchBOM(g):
                 treasures.append(card)
         if not bad:
             reason = 'Bought only money and vp : %s' % (', '.join(treasures))
-            ret.append( achievement(player, reason) )
+            ret.append(achievement(player, reason))
     return ret
 
 def CheckMatchBOMMinator(g):
@@ -43,7 +43,7 @@ def CheckMatchBOMMinator(g):
     for match_dict in cands:
         player = match_dict['player']
         if g.get_player_deck(player).WinPoints() > 1.0:
-            ret.append( achievement(player, match_dict['reason'] + ' and won') )
+            ret.append(achievement(player, match_dict['reason'] + ' and won'))
     return ret
 
 # Salted Earth: Had a negative score.
@@ -89,9 +89,11 @@ def CheckMatchOneTrickPony(g):
             if actions_quants[0][1] < 7:
                 continue
             action, quant = actions_quants[0]
-            ret.append(achievement(player, 
-                                   'Bought no action other than %d %s' % (quant, card_info.pluralize(action, quant)),
-                                   action))
+            ret.append(
+                achievement(player, 
+                            'Bought no action other than %d %s' % (
+                        quant, card_info.pluralize(action, quant)),
+                            action))
     return ret
 
 def CheckMatchMrGreenGenes(g):
@@ -112,7 +114,8 @@ def CheckScore(g, low, high=None):
     for player in g.get_player_decks():
         score = player.points
         if score >= low and (high is None or score < high):
-            ret.append(achievement(player.name(), "Scored more than %d points" % low, score))
+            ret.append(achievement(player.name(), 
+                                   "Scored more than %d points" % low, score))
     return ret
 
 def CheckMatchPeer(g):
@@ -140,6 +143,7 @@ def CheckMatchArchon(g):
     return CheckScore(g, 110)
 
 def GroupFuncs(funcs, group_name):
+    """Attach group and priority to functions in funcs so they are sortable."""
     for idx, func in enumerate(funcs):
         func.group = group_name
         func.priority = idx
@@ -154,7 +158,8 @@ def CheckMatchBuzzerBeater(g):
     for player in g.get_player_decks():
         score = player.points
         scores[player.name()] = score
-    s_scores = sorted(scores.iteritems(), key=operator.itemgetter(1), reverse=True)
+    s_scores = sorted(scores.iteritems(), 
+                      key=operator.itemgetter(1), reverse=True)
     if len(s_scores)>1 and s_scores[0][1] == s_scores[1][1] + 1:
         return [achievement(s_scores[0][0], "Won by exactly one point")]
     else:
@@ -174,10 +179,12 @@ def CheckMatchAnticlimactic(g):
     ret = []
     for player in g.get_player_decks():
         wp = player.WinPoints()
-        if wp>max_score:
+        if wp > max_score:
             return ret
         elif wp!=0.0:
-            ret.append( achievement(player.name(), 'Shared a victory with two or more opponents') )
+            ret.append(
+                achievement(player.name(), 
+                            'Shared a victory with two or more opponents'))
 
     return ret
 
@@ -193,7 +200,8 @@ def CheckMatchAnticlimactic(g):
 
 def CheckMatchCarny(g):
     """Obtained at least 30 VP from Fairgrounds"""
-    # Original suggestion: Blue ribbon - ended game with a Fairgrounds worth 8 VP
+    # Original suggestion: Blue ribbon - ended game with a Fairgrounds worth 
+    # 8 VP
     ret = []
     for pdeck in g.get_player_decks():
         (player, deck) = (pdeck.player_name, pdeck.deck)
@@ -201,7 +209,8 @@ def CheckMatchCarny(g):
             continue
         fg_pts = game.score_fairgrounds(deck)
         if fg_pts >= 30:
-            ret.append( achievement(player, '%d VP from Fairgrounds' % fg_pts, fg_pts) )
+            ret.append(achievement(player, 
+                                   '%d VP from Fairgrounds' % fg_pts, fg_pts))
     return ret
 
 def CheckMatchGardener(g):
@@ -214,7 +223,8 @@ def CheckMatchGardener(g):
             continue
         g_pts = game.score_gardens(deck)
         if g_pts >= 20:
-            ret.append( achievement(player, '%d VP from Gardens' % g_pts, g_pts) )
+            ret.append(achievement(player, 
+                                   '%d VP from Gardens' % g_pts, g_pts))
 
     return ret
 
@@ -227,10 +237,11 @@ def CheckMatchDukeOfEarl(g):
         if 'Duke' not in deck:
             continue
         duke_pts = game.score_duke(deck)
-        duchy_pts = deck['Duchy'] * 3
+        duchy_pts = deck.get('Duchy', 0) * 3
         d_pts = duke_pts + duchy_pts
         if d_pts >= 42:
-            ret.append( achievement(player, '%d VP from Dukes and Duchies' % d_pts, d_pts) )
+            ret.append(achievement(player, '%d VP from Dukes and Duchies' % 
+                                   d_pts, d_pts))
     return ret
 
 # == Use of one card in a turn
@@ -331,7 +342,8 @@ def CheckMatchMegaTurn(g):
         if new_cards.count(biggest_victory) == victory_copies:
             ret.append(
                 achievement(turn.player.name(),
-                 "Obtained all of the %s cards in one turn" % biggest_victory, biggest_victory))
+                 "Obtained all of the %s cards in one turn" % 
+                            biggest_victory, biggest_victory))
     return ret
 
 def CheckMatchOscarTheGrouch(g):
@@ -340,7 +352,9 @@ def CheckMatchOscarTheGrouch(g):
     for turn in g.get_turns():
         trashes = len(turn.turn_dict.get('trashes',[]))
         if trashes >= 7:
-            ret.append(achievement(turn.player.name(), "Trashed %d cards in one turn" % trashes, trashes))
+            ret.append(achievement(turn.player.name(), 
+                                   "Trashed %d cards in one turn" % trashes, 
+                                   trashes))
     return ret
 
 goal_check_funcs = {}
@@ -472,8 +486,10 @@ def main():
     checker_output = collections.defaultdict(int)
 
     parser = utils.incremental_max_parser()
-    parser.add_argument('--goals', metavar='goal_name', nargs='+', 
-                        help='If set, the script will check only the goals specified for all of the games that have already been scanned')
+    parser.add_argument(
+        '--goals', metavar='goal_name', nargs='+', 
+        help=('If set, check only the goals specified for all of '
+              'the games that have already been scanned')
     args = parser.parse_args()
     if args.goals:
         valid_goals = True
@@ -520,7 +536,7 @@ def main():
         # If rechecking, delete old values
         if goals_to_check is not None:
             goals = mongo_val['goals']
-            for ind in range( len(goals)-1, -1, -1):
+            for ind in range(len(goals) - 1, -1, -1):
                 goal = goals[ind]
                 if goal['goal_name'] in goals_to_check:
                     del goals[ind]
@@ -532,7 +548,7 @@ def main():
         for goal in goals:
             name = name_merger.norm_name(goal['player'])
             goal_name = goal['goal_name']
-            mongo_val['goals'].append( goal )
+            mongo_val['goals'].append(goal)
             checker_output[goal_name] += 1
 
         mongo_val = dict(mongo_val)
