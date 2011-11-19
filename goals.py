@@ -488,8 +488,8 @@ def main():
     parser = utils.incremental_max_parser()
     parser.add_argument(
         '--goals', metavar='goal_name', nargs='+', 
-        help=('If set, check only the goals specified for all of '
-              'the games that have already been scanned')
+        help=('If set, check only the goals specified for all of ' +
+              'the games that have already been scanned'))
     args = parser.parse_args()
     if args.goals:
         valid_goals = True
