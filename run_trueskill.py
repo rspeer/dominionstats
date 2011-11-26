@@ -15,7 +15,9 @@ class PrimitiveSkillInfo(primitive_util.PrimitiveConversion):
     def to_primitive_object(self):
         return {'mu': float(self.mu),
                 'sigma': float(self.sigma),
-                'gamma': float(self.gamma)}
+                'gamma': float(self.gamma),
+                'floor': float(self.floor),
+                'ceil': float(self.ceil)}
 
 class DbBackedSkillTable(ts.SkillTable):
     def __init__(self, coll):
@@ -36,23 +38,30 @@ class DbBackedSkillTable(ts.SkillTable):
             skill_info.sigma = 25.0/3
             if name.startswith('open:'):
                 skill_info.gamma = 0.0001
-                skill_info.mu = 0
+                skill_info.mu = 0.
             else:
-                skill_info.gamma = 25.0/300
-                skill_info.mu = 25
+                skill_info.gamma = 0.
+                skill_info.mu = 25.
 
         self.skill_infos[name] = skill_info
         return self.skill_infos[name]
-        
+    
+    def add_uncertainty(self, strength):
+        for value in self.skill_infos.itervalues():
+            value.sigma = (value.sigma*(1-strength)) + (25./3*strength)
+
     def save(self):
         for key, val in self.skill_infos.iteritems():
             utils.write_object_to_db(val, self.coll, key)
 
 def setup_openings_collection(coll):
     coll.ensure_index('_id')
+    coll.ensure_index('mu')
+    coll.ensure_index('floor')
+    coll.ensure_index('ceil')
 
 def update_skills_for_game(game, opening_skill_table, 
-                           #player_skill_table
+                           player_skill_table
                            ):
     teams = []
     results = []
@@ -73,7 +82,7 @@ def update_skills_for_game(game, opening_skill_table,
         else:
             vp = deck['points']
         results.append((-vp, nturns))
-        player_name = deck['name']
+        player_name = deck['name'][:80]
 
         teams.append([open_name, player_name])
         ranks = results_to_ranks(results)
@@ -84,11 +93,12 @@ def update_skills_for_game(game, opening_skill_table,
             for team, rank in zip(teams, ranks)
             ]
         ts.update_trueskill_team(team_results, opening_skill_table)
-    # player_results = [
-    #     ([team[1]], [1.0], rank)
-    #     for team, rank in zip(teams, ranks)
-    #     ]
-    # ts.update_trueskill_team(player_results, player_skill_table)
+    
+    player_results = [
+         ([team[1]], [1.0], rank)
+         for team, rank in zip(teams, ranks)
+         ]
+    ts.update_trueskill_team(player_results, player_skill_table)
     
 def run_trueskill_openings():
     con = get_mongo_connection()
@@ -97,13 +107,17 @@ def run_trueskill_openings():
 
     collection = db.trueskill_openings
     player_collection = db.trueskill_players
-    # player_collection.remove()
-    # collection.remove()
+    
+    ## if we want to start over:
+    #db.scanner.remove({'_id': 'trueskill'})
+    #player_collection.remove()
+    #collection.remove()
+
     setup_openings_collection(collection)
-    # setup_openings_collection(player_collection)
+    setup_openings_collection(player_collection)
 
     opening_skill_table = DbBackedSkillTable(collection)
-    # player_skill_table = DbBackedSkillTable(player_collection)
+    player_skill_table = DbBackedSkillTable(player_collection)
 
     args = utils.incremental_max_parser().parse_args()
     scanner = incremental_scanner.IncrementalScanner('trueskill', db)
@@ -113,14 +127,17 @@ def run_trueskill_openings():
 
     for ind, game in enumerate(
         progress_meter(scanner.scan(db.games, {}), 100)):
-        if len(game['decks']) >= 2 and len(game['decks'][1]['turns']) >= 5:
-            update_skills_for_game(game, opening_skill_table)
+        if len(game['decks']) >= 2 and len(game['decks'][1]['turns']) >= 2:
+            update_skills_for_game(game, opening_skill_table, player_skill_table)
                                    
         if ind == args.max_games:
             break
 
-    #player_skill_table.save()
-    opening_skill_table.save()
+        if ind % 15000 == 0:
+            player_skill_table.save()
+            player_skill_table.add_uncertainty(0.01)
+            opening_skill_table.save()
+    
     scanner.save()
     print scanner.status_msg()
 
