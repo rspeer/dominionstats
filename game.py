@@ -335,6 +335,8 @@ def score_deck(deck_comp):
         ret += score_fairgrounds(deck_comp)
     if 'Vineyard' in deck_comp:
         ret += score_vineyard(deck_comp)
+    if 'Silk Road' in deck_comp:
+        ret += score_silk_road(deck_comp)
 
     for card in deck_comp:
         ret += card_info.vp_per_card(card) * deck_comp[card]
@@ -354,6 +356,10 @@ def score_fairgrounds(deck_comp):
 def score_vineyard(deck_comp):
     return sum(deck_comp[card] if card_info.is_action(card) else 0
                for card in deck_comp) / 3 * deck_comp['Vineyard']
+
+def score_silk_road(deck_comp):
+    return sum(deck_comp[card] if card_info.is_victory(card) else 0
+               for card in deck_comp) / 4 * deck_comp['Silk Road']
 
 class GameState(object):
     def __init__(self, game):
