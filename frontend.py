@@ -33,6 +33,7 @@ urls = (
   '/win_weighted_accum_turn.html', 'WinWeightedAccumTurnPage',
   '/popular_buys', 'PopularBuyPage',
   '/openings', 'OpeningPage',
+  '/leaderboard', 'LeaderboardPage',
   '/goals', 'GoalsPage',
   '/(.*)', 'StaticPage'
 )
@@ -93,7 +94,7 @@ class OpeningPage(object):
         if 'card' in query_dict:
             selected_card = query_dict['card']
 
-        results = db.trueskill_openings.find({'_id': {'$regex': '^open:'}})
+        results = db.trueskill_openings_dev.find({'_id': {'$regex': '^open:'}})
         openings = list(results)
         card_list = card_info.OPENING_CARDS
         def split_opening(o):
@@ -130,6 +131,17 @@ class OpeningPage(object):
 
         render = web.template.render('')
         return render.openings_template(openings, card_list, selected_card)
+
+class LeaderboardPage(object):
+    def GET(self):
+        web.header("Content-Type", "text/html; charset=utf-8")  
+        query_dict = dict(urlparse.parse_qsl(web.ctx.env['QUERY_STRING']))
+        db = utils.get_mongo_database()
+
+        ratings = list(db.trueskill_players_dev.find(
+            {'floor': {'$gt': 0}}).sort([('floor', -1)]).limit(10000))
+        render = web.template.render('')
+        return render.leaderboard_template(ratings)
 
 class PlayerJsonPage(object):
     def GET(self):
