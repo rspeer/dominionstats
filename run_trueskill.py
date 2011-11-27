@@ -49,6 +49,8 @@ class DbBackedSkillTable(ts.SkillTable):
     def add_uncertainty(self, strength):
         for value in self.skill_infos.itervalues():
             value.sigma = (value.sigma*(1-strength)) + (25./3*strength)
+            value.floor = value.mu - 3*value.sigma
+            value.ceil = value.mu + 3*value.sigma
 
     def save(self):
         for key, val in self.skill_infos.iteritems():
@@ -109,9 +111,9 @@ def run_trueskill_openings():
     player_collection = db.trueskill_players
     
     ## if we want to start over:
-    #db.scanner.remove({'_id': 'trueskill'})
-    #player_collection.remove()
-    #collection.remove()
+    db.scanner.remove({'_id': 'trueskill'})
+    player_collection.remove()
+    collection.remove()
 
     setup_openings_collection(collection)
     setup_openings_collection(player_collection)

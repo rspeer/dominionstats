@@ -310,7 +310,7 @@ def SetParameters(beta=None, epsilon=None, draw_probability=None,
   global BETA, EPSILON, GAMMA
 
   if beta is None:
-    BETA = INITIAL_SIGMA / 2.0
+    BETA = INITIAL_SIGMA * 3.0 / 2.0
   else:
     BETA = beta
 
