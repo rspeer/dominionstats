@@ -46,11 +46,12 @@ class DbBackedSkillTable(ts.SkillTable):
         self.skill_infos[name] = skill_info
         return self.skill_infos[name]
     
-    def add_uncertainty(self, strength):
-        for value in self.skill_infos.itervalues():
-            value.sigma = (value.sigma*(1-strength)) + (25./3*strength)
-            value.floor = value.mu - 3*value.sigma
-            value.ceil = value.mu + 3*value.sigma
+    def add_uncertainty(self, strength, skip_openings=False):
+        for key, value in self.skill_infos.iteritems():
+            if not (skip_openings and key.startswith('open:')):
+                value.sigma = (value.sigma*(1-strength)) + (25./3*strength)
+                value.floor = value.mu - 3*value.sigma
+                value.ceil = value.mu + 3*value.sigma
 
     def save(self):
         for key, val in self.skill_infos.iteritems():
@@ -70,8 +71,12 @@ def update_skills_for_game(game, opening_skill_table,
     openings = []
     dups = False
     for deck in game['decks']:
-        opening = deck['turns'][0].get('buys', []) + \
-            deck['turns'][1].get('buys', [])
+        if len(deck['turns']) >= 2:
+            opening = deck['turns'][0].get('buys', []) + \
+                deck['turns'][1].get('buys', [])
+        else:
+            opening = ['resign']
+            dups = True
             
         opening.sort()
         open_name = 'open:' + '+'.join(opening)
@@ -107,13 +112,13 @@ def run_trueskill_openings():
     db = con.test
     games = db.games
 
-    collection = db.trueskill_openings
-    player_collection = db.trueskill_players
+    collection = db.trueskill_openings_dev
+    player_collection = db.trueskill_players_dev
     
     ## if we want to start over:
-    db.scanner.remove({'_id': 'trueskill'})
-    player_collection.remove()
-    collection.remove()
+    #db.scanner.remove({'_id': 'trueskill'})
+    #player_collection.remove()
+    #collection.remove()
 
     setup_openings_collection(collection)
     setup_openings_collection(player_collection)
@@ -122,7 +127,7 @@ def run_trueskill_openings():
     player_skill_table = DbBackedSkillTable(player_collection)
 
     args = utils.incremental_max_parser().parse_args()
-    scanner = incremental_scanner.IncrementalScanner('trueskill', db)
+    scanner = incremental_scanner.IncrementalScanner('trueskill_dev', db)
     if not args.incremental:
         scanner.reset()
         collection.drop()
@@ -139,6 +144,7 @@ def run_trueskill_openings():
             player_skill_table.save()
             player_skill_table.add_uncertainty(0.01)
             opening_skill_table.save()
+            opening_skill_table.add_uncertainty(0.01, skip_openings=True)
     
     scanner.save()
     print scanner.status_msg()

@@ -198,6 +198,8 @@ class PlayerPage(object):
         norm_target_player = norm_name(target_player)
         games_coll = games.find({'players': norm_target_player})
 
+        rating = db.trueskill_players_dev.find_one({'_id': target_player})
+
         keyed_by_opp = collections.defaultdict(list)
         real_name_usage = collections.defaultdict(
             lambda: collections.defaultdict(int))
@@ -268,8 +270,14 @@ class PlayerPage(object):
                </span></form><br><br>
                """
 
+        if rating:
+            ret += '<b>CouncilRoom rating</b>: '
+            ret += '%3.3f &plusmn; %3.3f (Level %d)' % (
+                rating['mu'], rating['sigma']*3, int(max(0, rating['floor']))
+            )
         if len(aliases) > 1:
             ret += 'Aliases: ' + ', '.join(aliases) + '\n'
+        ret += '<div style="clear: both;">&nbsp;</div>'
 
 
         ret += render_record_table('Record by game size', overall_record,
